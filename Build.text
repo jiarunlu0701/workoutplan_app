@@ -1,0 +1,10 @@
+load("@build_bazel_rules_apple//apple:ios.bzl", "ios_application")
+
+ios_application(
+    name = "workoutplan.ai",
+    bundle_id = "com.example.myapp",
+    families = ["iphone", "ipad"],
+    infoplists = ["Info.plist"],
+    minimum_os_version = "9.0",
+    deps = [":app"],
+)
