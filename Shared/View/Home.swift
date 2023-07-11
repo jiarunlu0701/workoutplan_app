@@ -49,14 +49,11 @@ struct Home: View {
             ExerciseContent(date: selectedDate, workoutManager: appState.workoutManager)
                 .frame(minHeight: 700)
         }
-<<<<<<< HEAD
         .onAppear {
             if let userId = UserAuth.getCurrentUserId() {
                 appState.workoutManager.fetchWorkoutPhasesForUser(userId: userId)
             }
         }
-=======
->>>>>>> 3f00d72bc4fbc3129611c6cbcfa762e28e759bd4
         .padding(.horizontal)
         .background(Color.clear)
         .sheet(isPresented: $isShowingCoachChatView) {
