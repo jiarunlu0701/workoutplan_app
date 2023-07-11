@@ -340,9 +340,17 @@ class AppState: ObservableObject {
                     print("Received stream response: \(string)")
                     if completeResponseContent.contains("WORKOUTPLAN:") {
                         let workoutPlanString = completeResponseContent.replacingOccurrences(of: "WORKOUTPLAN:", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
+<<<<<<< HEAD
                         self.workoutManager.decodeWorkoutPhase(from: workoutPlanString)
                     }
 
+=======
+                        print("Workout plan string: \(workoutPlanString)")
+                        
+                        self.workoutManager.decodeWorkoutPhase(from: workoutPlanString)
+                    }
+                    
+>>>>>>> 3f00d72bc4fbc3129611c6cbcfa762e28e759bd4
                 case .failure(_):
                     print("Something failed")
                 }
@@ -350,11 +358,14 @@ class AppState: ObservableObject {
             case .complete(_):
                 print("COMPLETE")
                 print(self.messages)
+<<<<<<< HEAD
                 if let userId = UserAuth.getCurrentUserId() {
                     self.workoutManager.saveWorkoutPhasesForUser(userId: userId)
                 } else {
                     print("No user is currently signed in.")
                 }
+=======
+>>>>>>> 3f00d72bc4fbc3129611c6cbcfa762e28e759bd4
             }
         }
     }

@@ -1,6 +1,9 @@
 import Foundation
 import FirebaseFirestore
+<<<<<<< HEAD
 import Firebase
+=======
+>>>>>>> 3f00d72bc4fbc3129611c6cbcfa762e28e759bd4
 
 struct Exercise: Codable, Identifiable {
     let id = UUID()
@@ -39,6 +42,7 @@ extension Encodable {
 
 class WorkoutManager: ObservableObject {
     @Published var workoutPhases: [WorkoutPhase] = []
+<<<<<<< HEAD
     let db = Firestore.firestore()
     
     func saveWorkoutPhasesForUser(userId: String) {
@@ -77,6 +81,8 @@ class WorkoutManager: ObservableObject {
             }
         }
     }
+=======
+>>>>>>> 3f00d72bc4fbc3129611c6cbcfa762e28e759bd4
     
     func exercisesForDay(date: Date) -> [Exercise] {
         let calendar = Calendar.current
@@ -90,6 +96,10 @@ class WorkoutManager: ObservableObject {
             }
             return false
         }
+<<<<<<< HEAD
+=======
+        
+>>>>>>> 3f00d72bc4fbc3129611c6cbcfa762e28e759bd4
         let filteredWorkouts = filteredPhases.flatMap { phase in
             let weekday = calendar.component(.weekday, from: date)
             let adjustedWeekday = weekday == 1 ? 7 : weekday - 1
@@ -97,8 +107,15 @@ class WorkoutManager: ObservableObject {
                 return workout.day == adjustedWeekday
             }
         }
+<<<<<<< HEAD
         return filteredWorkouts.flatMap { $0.exercises ?? [] }
     }
+=======
+        
+        return filteredWorkouts.flatMap { $0.exercises ?? [] }
+    }
+
+>>>>>>> 3f00d72bc4fbc3129611c6cbcfa762e28e759bd4
     
     func decodeWorkoutPhase(from string: String) {
         guard let data = string.data(using: .utf8) else {
@@ -138,6 +155,10 @@ class WorkoutManager: ObservableObject {
         }
     }
 
+<<<<<<< HEAD
+=======
+    
+>>>>>>> 3f00d72bc4fbc3129611c6cbcfa762e28e759bd4
     var earliestPhaseStartDate: Date {
            let dateFormatter = DateFormatter()
            dateFormatter.dateFormat = "yyyy-MM-dd"

@@ -19,11 +19,14 @@ class UserAuth: ObservableObject {
             }
         }
     }
+<<<<<<< HEAD
     
     static func getCurrentUserId() -> String? {
         return Auth.auth().currentUser?.uid
     }
 
+=======
+>>>>>>> 3f00d72bc4fbc3129611c6cbcfa762e28e759bd4
 
     func signOut() {
         do {
