@@ -120,7 +120,8 @@ struct ExerciseContent: View {
     
     var body: some View {
         ScrollView {
-            if let exercises = workoutManager.exercisesForDay(date: date), !exercises.isEmpty {
+            let exercises = workoutManager.exercisesForDay(date: date)
+            if !exercises.isEmpty {
                 VStack(alignment: .leading, spacing: 30) {
                     ForEach(exercises) { exercise in
                         ExerciseView(exercise: exercise)
