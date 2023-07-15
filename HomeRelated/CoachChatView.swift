@@ -3,6 +3,7 @@ import SwiftUI
 struct CoachChatView: View {
     @ObservedObject var appState: AppState
     let decoder = JSONDecoder()
+    
     private let bottomPaddingID = "BottomPaddingID"
     @State private var isScrolling = false // Track scrolling state
 
@@ -12,7 +13,6 @@ struct CoachChatView: View {
     var body: some View {
         ZStack {
             BackgroundView()
-
             VStack {
                 // Close button
                 HStack(alignment: .center) {
@@ -20,11 +20,11 @@ struct CoachChatView: View {
                     Button(action: {
                         self.presentationMode.wrappedValue.dismiss()
                     }) {
-                        Text("Close") // Button label
-                            .padding()
-                            .background(Color.gray.opacity(0.6))
-                            .foregroundColor(.white)
-                            .cornerRadius(25)
+                        Image(systemName: "xmark.circle")
+                            .resizable()
+                            .frame(width: 30, height: 30)
+                            .foregroundColor(.gray)
+
                     }
                     Spacer()
                 }
@@ -67,7 +67,6 @@ struct CoachChatView: View {
                 .padding()
             }
         }
-        .preferredColorScheme(.dark)
     }
 
     func messageView(message: Message) -> some View {

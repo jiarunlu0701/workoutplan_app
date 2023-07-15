@@ -12,7 +12,6 @@ class UserAuth: ObservableObject {
 
     func signIn(email: String, password: String) {
         Auth.auth().signIn(withEmail: email, password: password) { [weak self] authResult, error in
-            // Handle errors...
             self?.isLoggedin = Auth.auth().currentUser != nil
             if let user = Auth.auth().currentUser {
                 self?.userSession.userId = user.uid
@@ -31,7 +30,6 @@ class UserAuth: ObservableObject {
             self.isLoggedin = false
             self.userSession.userId = nil
         } catch {
-            // Handle errors...
         }
     }
 }

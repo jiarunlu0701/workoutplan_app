@@ -7,7 +7,6 @@
 
 import SwiftUI
 
-// MARK: Progress Ring Model and Sample Data
 struct Ring: Identifiable{
     var id = UUID().uuidString
     var progress: CGFloat

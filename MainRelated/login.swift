@@ -1,19 +1,18 @@
 import SwiftUI
 import FirebaseAuth
 
-struct SignUpView: View {
+struct LoginView: View {
     @State private var email = ""
     @State private var password = ""
-    @State private var confirm_password = ""
     @State private var errorText = ""
+    @State private var showingSignUp = false
     @EnvironmentObject var userAuth: UserAuth
-    @Binding var isPresented: Bool
+
     var body: some View {
         ZStack{
             BackgroundView()
             VStack {
-                
-                Text("Sign Up")
+                Text("Login")
                     .font(.title)
                     .fontWeight(.bold)
                 
@@ -31,12 +30,6 @@ struct SignUpView: View {
                     .cornerRadius(5.0)
                     .padding(.bottom, 20)
                 
-                SecureField("Confirm Password", text: $confirm_password)
-                    .padding()
-                    .background(Color.gray.opacity(0.2))
-                    .cornerRadius(5.0)
-                    .padding(.bottom, 20)
-                
                 if !errorText.isEmpty {
                     Text(errorText)
                         .font(.callout)
@@ -44,7 +37,17 @@ struct SignUpView: View {
                         .padding(.bottom, 20)
                 }
                 
-                Button(action: { signUpUser() }) {
+                Button(action: { loginUser() }) {
+                    Text("Login")
+                        .fontWeight(.bold)
+                        .padding(.vertical, 10)
+                        .padding(.horizontal)
+                        .background(Color.gray.opacity(0.6))
+                        .foregroundColor(.white)
+                        .cornerRadius(25)
+                }
+                
+                Button(action: { showingSignUp = true }) {
                     Text("Sign Up")
                         .fontWeight(.bold)
                         .padding(.vertical, 10)
@@ -53,33 +56,35 @@ struct SignUpView: View {
                         .foregroundColor(.white)
                         .cornerRadius(25)
                 }
-                .padding(.bottom, 20)
+                HStack {
+                    Button(action: {
+                        userAuth.signOut()
+                    }) {
+                        Text("Sign Out")
+                            .fontWeight(.bold)
+                            .padding(.vertical, 10)
+                            .padding(.horizontal)
+                            .background(Color.gray.opacity(0.6))
+                            .foregroundColor(.white)
+                            .cornerRadius(25)
+                    }
+                    .padding(.horizontal)
+                }
+                .sheet(isPresented: $showingSignUp) {
+                    SignUpView(isPresented: $showingSignUp)
+                }
             }
-            .padding(.horizontal)
         }
-        .padding(.horizontal)
-        
     }
     
-    private func signUpUser() {
-        guard password == confirm_password else {
-            errorText = "Passwords do not match."
-            return
-        }
-        
-        Auth.auth().createUser(withEmail: email, password: password) { result, error in
-            if let error = error {
-                errorText = error.localizedDescription
-            } else {
-                self.userAuth.signIn(email: self.email, password: self.password)
-
-            }
-        }
+    private func loginUser() {
+        userAuth.signIn(email: email, password: password)
     }
 }
 
-struct SignUpView_Previews: PreviewProvider {
+struct LoginView_Previews: PreviewProvider {
     static var previews: some View {
-        SignUpView(isPresented: .constant(true)).environmentObject(UserAuth())
+        LoginView().environmentObject(UserAuth())
     }
 }
+
