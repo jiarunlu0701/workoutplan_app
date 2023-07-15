@@ -3,6 +3,7 @@ import Alamofire
 
 class OpenAIService {
     private let endpointUrl = "https://api.openai.com/v1/chat/completions"
+    private var currentRequest: DataStreamRequest?
     
     func sendMessage(messages: [Message]) async -> OpenAIChatResponse? {
         let openAIMessages = messages.map({OpenAIChatMessage(role: $0.role, content: $0.content)})
@@ -21,8 +22,16 @@ class OpenAIService {
         let headers: HTTPHeaders = [
             "Authorization": "Bearer \(Constants.openAIApiKey)"
         ]
-        return AF.streamRequest(endpointUrl, method: .post, parameters: body, encoder: .json, headers: headers)
+        let request = AF.streamRequest(endpointUrl, method: .post, parameters: body, encoder: .json, headers: headers)
+        self.currentRequest = request
+        return request
     }
+    
+    func cancelCurrentStream() {
+        currentRequest?.cancel()
+        currentRequest = nil
+    }
+
 }
 
 struct OpenAIChatBody: Encodable {

@@ -3,12 +3,14 @@ import SwiftUI
 struct CoachChatView: View {
     @ObservedObject var appState: AppState
     let decoder = JSONDecoder()
+    private let openAIService = OpenAIService()
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var userSession: UserSession
     @Binding var selectedTab: Int
     @Binding var previousTab: Int
     private let bottomPaddingID = "BottomPaddingID"
     @State private var isScrolling = false
+
     var body: some View {
         ZStack {
             BackgroundView()
@@ -18,17 +20,20 @@ struct CoachChatView: View {
                         self.presentationMode.wrappedValue.dismiss()
                         self.selectedTab = self.previousTab
                     }) {
-                        Image(systemName: "xmark.circle")
+                        Image(systemName: "xmark")
                             .resizable()
-                            .frame(width: 30, height: 30)
+                            .frame(width: 20, height: 20)
                             .foregroundColor(.gray)
                     }
                     Spacer()
-                    Image(systemName: "arrow.clockwise")
-                        .resizable()
-                        .frame(width: 30, height: 30)
-                        .foregroundColor(.gray)
-                    
+                    Button(action: {
+                        self.resetAppState()
+                    }) {
+                        Image(systemName: "arrow.clockwise")
+                            .resizable()
+                            .frame(width: 25, height: 25)
+                            .foregroundColor(.gray)
+                    }
                 }
                 .padding()
                 ScrollViewReader { proxy in
@@ -62,7 +67,10 @@ struct CoachChatView: View {
                     Button(action: {
                         appState.sendMessage()
                     }) {
-                        Text("Send")
+                        Image(systemName: "paperplane")
+                            .resizable()
+                            .frame(width: 25, height: 25)
+                            .foregroundColor(.gray)
                     }
                 }
                 .padding()
@@ -95,6 +103,11 @@ struct CoachChatView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             self.isScrolling = false
         }
+    }
+    
+    func resetAppState() {
+        openAIService.cancelCurrentStream()
+        self.appState.reset()
     }
 }
 

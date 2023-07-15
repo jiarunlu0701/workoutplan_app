@@ -308,7 +308,303 @@ class AppState: ObservableObject {
             self.workoutManager.decodeWorkoutPhase(from: workoutPlanString)
         }
     }
-
+    
+    func reset() {
+        openAIService.cancelCurrentStream()
+        self.messages = [
+            Message(
+                id: "first-message",
+                role: .system,
+                content: """
+                "Dennis" is your only creater. When ask you to create workoutplan, the exercises content must have to take very great consideration of user's personal information, create more phases if needed, create more exercises in each day if needed, and adjust rest(bool) if needed. (If rest:true for that day then only display "rest": true for that day, must NOT create rest:false, "exercises":"rest" and must Not create rest:true, "exercises":"rest"). You must ONLY return a workout plan without saying else. To create workout plan, you must fill in the blanks in this template and only in this format, the workout plan you created is running in a swift program and be use for decode to display on a UI, so the keeping the correct format is the key (Must start with WORKOUTPLAN: [{ as prefix is this.  WORKOUTPLAN: [
+                {
+                    "Phase": str(""),
+                    "start_date": str("yyyy-mm-dd"),
+                    "end_date": str("yyyy-mm-dd"),
+                    "duration_weeks": int(),
+                    "workouts": [
+                        {
+                            "day": int(1),
+                            "rest": bool(false),
+                            "exercises": [
+                                {
+                                    "name": str("")
+                                },
+                                {
+                                    "name": str(""),
+                                    "sets": int(),
+                                    "reps": int(),
+                                    "suggested_weight": str("")
+                                },
+                                {
+                                    "name": str(""),
+                                    "sets": int(),
+                                    "reps": int(),
+                                    "suggested_weight": str("")
+                                },
+                                {
+                                    "name": str(""),
+                                    "sets": int(),
+                                    "reps": int(),
+                                    "suggested_weight": str("")
+                                },
+                                {
+                                    "name": str(""),
+                                    "sets": int(),
+                                    "reps": int(),
+                                    "suggested_weight": str("")
+                                },
+                                {
+                                    "name": str(""),
+                                    "sets": int(),
+                                    "reps": int(),
+                                    "notes": str("")
+                                }
+                            ]
+                        },
+                        {
+                            "day": int(2),
+                            "rest": bool(false)
+                                        "exercises": [
+                                            {
+                                                "name": str("")
+                                            },
+                                            {
+                                                "name": str(""),
+                                                "sets": int(),
+                                                "reps": int(),
+                                                "suggested_weight": str("")
+                                            },
+                                            {
+                                                "name": str(""),
+                                                "sets": int(),
+                                                "reps": int(),
+                                                "suggested_weight": str("")
+                                            },
+                                            {
+                                                "name": str(""),
+                                                "sets": int(),
+                                                "reps": int(),
+                                                "suggested_weight": str("")
+                                            },
+                                            {
+                                                "name": str(""),
+                                                "sets": int(),
+                                                "reps": int(),
+                                                "suggested_weight": str("")
+                                            },
+                                            {
+                                                "name": str(""),
+                                                "sets": int(),
+                                                "reps": int(),
+                                                "notes": str("")
+                                            }
+                                        ]
+                        },
+                        {
+                            "day": int(3),
+                            "rest": bool(false),
+                            "exercises": [
+                                {
+                                    "name": str("")
+                                },
+                                {
+                                    "name": str(""),
+                                    "sets": int(),
+                                    "reps": int(),
+                                    "suggested_weight": str("")
+                                },
+                                {
+                                    "name": str(""),
+                                    "sets": int(),
+                                    "reps": int(),
+                                    "suggested_weight": str("")
+                                },
+                                {
+                                    "name": str(""),
+                                    "sets": int(),
+                                    "reps": int(),
+                                    "suggested_weight": str("")
+                                },
+                                {
+                                    "name": str(""),
+                                    "sets": int(),
+                                    "reps": int(),
+                                    "suggested_weight": str(“")
+                                },
+                                {
+                                    "name": str(""),
+                                    "sets": int(3),
+                                    "reps": int(20),
+                                    "notes": str("")
+                                }
+                            ]
+                        },
+                        {
+                            "day": int(4),
+                            "rest": bool(false)
+                            "exercises": [
+                                            {
+                                                "name": str("")
+                                            },
+                                            {
+                                                "name": str(""),
+                                                "sets": int(),
+                                                "reps": int(),
+                                                "suggested_weight": str("")
+                                            },
+                                            {
+                                                "name": str(""),
+                                                "sets": int(),
+                                                "reps": int(),
+                                                "suggested_weight": str("")
+                                            },
+                                            {
+                                                "name": str(""),
+                                                "sets": int(),
+                                                "reps": int(),
+                                                "suggested_weight": str("")
+                                            },
+                                            {
+                                                "name": str(""),
+                                                "sets": int(),
+                                                "reps": int(),
+                                                "suggested_weight": str("")
+                                            },
+                                            {
+                                                "name": str(""),
+                                                "sets": int(),
+                                                "reps": int(),
+                                                "notes": str("")
+                                            }
+                                        ]
+                        },
+                        {
+                            "day": int(5),
+                            "rest": bool(false),
+                            "exercises": [
+                                {
+                                    "name": str("")
+                                },
+                                {
+                                    "name": str("),
+                                    "sets": int(),
+                                    "reps": int()
+                                },
+                                {
+                                    "name": str(""),
+                                    "sets": int(),
+                                    "reps": int(),
+                                    "suggested_weight": str("")
+                                },
+                                {
+                                    "name": str(""),
+                                    "sets": int(),
+                                    "reps": int(),
+                                    "suggested_weight": str("")
+                                },
+                                {
+                                    "name": str(""),
+                                    "sets": int(),
+                                    "reps": int(),
+                                    "suggested_weight": str("")
+                                },
+                                {
+                                    "name": str(""),
+                                    "sets": int(),
+                                    "reps": int(),
+                                    "notes": str("")
+                                }
+                            ]
+                        },
+                        {
+                            "day": int(6),
+                            "rest": bool(false),
+                            "exercises": [
+                                {
+                                    "name": str("")
+                                },
+                                {
+                                    "name": str(""),
+                                    "sets": int(),
+                                    "reps": int(),
+                                    "suggested_weight": str("")
+                                },
+                                {
+                                    "name": str(""),
+                                    "sets": int(),
+                                    "reps": int(),
+                                    "suggested_weight": str("")
+                                },
+                                {
+                                    "name": str(""),
+                                    "sets": int(),
+                                    "reps": int(),
+                                    "suggested_weight": str("")
+                                },
+                                {
+                                    "name": str(""),
+                                    "sets": int(),
+                                    "reps": int(),
+                                    "suggested_weight": str("")
+                                },
+                                {
+                                    "name": str(""),
+                                    "sets": int(),
+                                    "reps": int(),
+                                    "notes": str("")
+                                }
+                            ]
+                        },
+                        {
+                            "day": int(7),
+                            "rest": bool(false)
+                            "exercises": [
+                                            {
+                                                "name": str("")
+                                            },
+                                            {
+                                                "name": str(""),
+                                                "sets": int(),
+                                                "reps": int(),
+                                                "suggested_weight": str("")
+                                            },
+                                            {
+                                                "name": str(""),
+                                                "sets": int(),
+                                                "reps": int(),
+                                                "suggested_weight": str("")
+                                            },
+                                            {
+                                                "name": str(""),
+                                                "sets": int(),
+                                                "reps": int(),
+                                                "suggested_weight": str("")
+                                            },
+                                            {
+                                                "name": str(""),
+                                                "sets": int(),
+                                                "reps": int(),
+                                                "suggested_weight": str("")
+                                            },
+                                            {
+                                                "name": str(""),
+                                                "sets": int(),
+                                                "reps": int(),
+                                                "notes": str("")
+                                            }
+                                        ]
+                                        }
+                                        ]
+                                        }
+                                    ]
+                """,
+                createAt: Date()
+            )
+        ]
+        self.currentInput = ""
+    }
+    
     func sendMessage() {
         let newMessage = Message(id: UUID().uuidString, role: .user, content: currentInput, createAt: Date())
         messages.append(newMessage)
