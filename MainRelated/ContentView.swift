@@ -44,29 +44,48 @@ struct BackgroundView: View {
 struct MainView: View {
     @EnvironmentObject var userAuth: UserAuth
     @StateObject private var appState = AppState()
-    
+    @State private var selectedTab: Int = 0
+    @State private var lastSelectedTab: Int = 0
+    @State private var showingCoachChat = false
+
     var body: some View {
         VStack {
-            TabView {
+            TabView(selection: $selectedTab) {
                 Home()
                     .environmentObject(userAuth)
                     .tabItem {
                         Image(systemName: "homekit")
                         Text("Home")
-                    }
+                    }.tag(0)
                 
-                Text("Calendar tb decided")
+                // Placeholder View for Chat
+                BackgroundView()
+                    .tabItem {
+                        Image(systemName: "message")
+                        Text("Chat")
+                    }
+                    .tag(1)
+
+                Text("Calendar to be decided")
                     .tabItem {
                         Image(systemName: "calendar")
-                        Text("clendar")
-                    }
-                
+                        Text("Calendar")
+                    }.tag(2)
+
                 LoginView()
                     .tabItem {
                         Image(systemName: "person")
                         Text("Me")
-                    }
+                    }.tag(3)
             }
+            .onChange(of: selectedTab) { newValue in
+                if newValue == 1 {
+                    showingCoachChat = true
+                }
+            }
+            .fullScreenCover(isPresented: $showingCoachChat, content: {
+                CoachChatView(appState: AppState(), selectedTab: $selectedTab)
+            })
             .environmentObject(appState)
             .onAppear {
                 let tabBarAppearance = UITabBarAppearance()
@@ -86,5 +105,3 @@ struct ContentView_Previews: PreviewProvider {
             .environmentObject(UserSession())
     }
 }
-
-

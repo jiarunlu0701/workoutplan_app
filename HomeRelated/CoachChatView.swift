@@ -3,12 +3,11 @@ import SwiftUI
 struct CoachChatView: View {
     @ObservedObject var appState: AppState
     let decoder = JSONDecoder()
-    
-    private let bottomPaddingID = "BottomPaddingID"
-    @State private var isScrolling = false // Track scrolling state
-
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var userSession: UserSession
+    @Binding var selectedTab: Int  // Add this line
+    private let bottomPaddingID = "BottomPaddingID"
+    @State private var isScrolling = false // Track scrolling state
 
     var body: some View {
         ZStack {
@@ -19,14 +18,13 @@ struct CoachChatView: View {
                     Spacer()
                     Button(action: {
                         self.presentationMode.wrappedValue.dismiss()
+                        self.selectedTab = 0 // change this to the index of the tab you want to display
                     }) {
                         Image(systemName: "xmark.circle")
                             .resizable()
                             .frame(width: 30, height: 30)
                             .foregroundColor(.gray)
-
                     }
-                    Spacer()
                 }
                 .padding()
 
@@ -99,9 +97,10 @@ struct CoachChatView: View {
 }
 
 struct CoachChatView_Previews: PreviewProvider {
+    @State static var selectedTab = 0 // Add this line
     static var previews: some View {
         NavigationView {
-            CoachChatView(appState: AppState())
+            CoachChatView(appState: AppState(), selectedTab: $selectedTab)
         }
     }
 }

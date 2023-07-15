@@ -5,7 +5,7 @@ struct Home: View {
     @State private var isShowingLoginView = false
     @StateObject private var appState = AppState()
     @State private var selectedDate: Date = Calendar.current.startOfDay(for: Date())
-    @State private var isShowingCoachChatView = false
+    @State private var selectedSegment = "Workouts"  // Here is the state for segmented control
     
     var body: some View {
         ZStack {
@@ -13,7 +13,7 @@ struct Home: View {
             ScrollView(.vertical, showsIndicators: false){
                 VStack(spacing: 40) {
                     Text("")
-                    Text("Welcome, ...")
+                    Text("Welcome")
                         .font(.title)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     FitnessRingCardView()
@@ -21,7 +21,19 @@ struct Home: View {
                         .padding(.horizontal)
                         .padding(.top, 10)
                     
-                    ExerciseContent(date: selectedDate, workoutManager: appState.workoutManager)
+                    Picker("", selection: $selectedSegment) {
+                        Text("Workouts").tag("Workouts")
+                        Text("Diet Plan").tag("Diet Plan")
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                    .padding(.horizontal)
+                    
+                    if selectedSegment == "Workouts" {
+                        ExerciseContent(date: selectedDate, workoutManager: appState.workoutManager)
+                    } else if selectedSegment == "Diet Plan" {
+                        DietPlanContent(date: selectedDate)
+                    }
+                    
                 }
                 .onAppear {
                     if let userId = UserAuth.getCurrentUserId() {
@@ -29,28 +41,10 @@ struct Home: View {
                     }
                 }
                 .padding(.horizontal)
-                .sheet(isPresented: $isShowingCoachChatView) {
-                    CoachChatView(appState: appState)
                 }
             }
-            // Floating message button
-            Button(action: {
-                isShowingCoachChatView.toggle()
-            }) {
-                Image(systemName: "message")
-                    .fontWeight(.bold)
-                    .padding()
-                    .background(Color.gray.opacity(0.6))
-                    .foregroundColor(.white)
-                    .cornerRadius(25)
-            }
-            .padding()
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
         }
     }
-}
-
-
 
 struct DateScrollBar: View {
     @Binding var selectedDate: Date
@@ -173,6 +167,14 @@ struct ExerciseView: View {
     }
 }
 
+struct DietPlanContent: View {
+    let date: Date
+    var body: some View {
+        // Add your content for diet plan here
+        Text("Diet Plan for \(date)")
+    }
+}
+
 struct CustomCheckmark: View {
     var body: some View {
         ZStack {
@@ -187,7 +189,6 @@ struct CustomCheckmark: View {
         }
     }
 }
-
 
 struct Home_Previews: PreviewProvider {
     static var previews: some View {
