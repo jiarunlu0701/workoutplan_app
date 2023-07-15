@@ -5,29 +5,32 @@ struct CoachChatView: View {
     let decoder = JSONDecoder()
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var userSession: UserSession
-    @Binding var selectedTab: Int  // Add this line
+    @Binding var selectedTab: Int
+    @Binding var previousTab: Int
     private let bottomPaddingID = "BottomPaddingID"
-    @State private var isScrolling = false // Track scrolling state
-
+    @State private var isScrolling = false
     var body: some View {
         ZStack {
             BackgroundView()
             VStack {
-                // Close button
-                HStack(alignment: .center) {
-                    Spacer()
+                HStack {
                     Button(action: {
                         self.presentationMode.wrappedValue.dismiss()
-                        self.selectedTab = 0 // change this to the index of the tab you want to display
+                        self.selectedTab = self.previousTab
                     }) {
                         Image(systemName: "xmark.circle")
                             .resizable()
                             .frame(width: 30, height: 30)
                             .foregroundColor(.gray)
                     }
+                    Spacer()
+                    Image(systemName: "arrow.clockwise")
+                        .resizable()
+                        .frame(width: 30, height: 30)
+                        .foregroundColor(.gray)
+                    
                 }
                 .padding()
-
                 ScrollViewReader { proxy in
                     ScrollView {
                         ForEach(appState.messages.filter({$0.role != .system}), id: \.self.id) { message in
@@ -77,7 +80,6 @@ struct CoachChatView: View {
                 .contextMenu {
                     Button(action: {
                         message.copyTextToClipboard()
-                        // Optionally show some sort of feedback that the text has been copied
                         print("Text copied to clipboard")
                     }) {
                         Text("Copy")
@@ -97,10 +99,8 @@ struct CoachChatView: View {
 }
 
 struct CoachChatView_Previews: PreviewProvider {
-    @State static var selectedTab = 0 // Add this line
+    @State static var selectedTab = 0
     static var previews: some View {
-        NavigationView {
-            CoachChatView(appState: AppState(), selectedTab: $selectedTab)
-        }
+        CoachChatView(appState: AppState(), selectedTab: $selectedTab, previousTab: .constant(0))
     }
 }

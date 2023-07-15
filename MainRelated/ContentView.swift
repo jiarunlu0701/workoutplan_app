@@ -46,6 +46,7 @@ struct MainView: View {
     @StateObject private var appState = AppState()
     @State private var selectedTab: Int = 0
     @State private var lastSelectedTab: Int = 0
+    @State private var previousTab: Int = 0
     @State private var showingCoachChat = false
 
     var body: some View {
@@ -58,7 +59,6 @@ struct MainView: View {
                         Text("Home")
                     }.tag(0)
                 
-                // Placeholder View for Chat
                 BackgroundView()
                     .tabItem {
                         Image(systemName: "message")
@@ -82,14 +82,17 @@ struct MainView: View {
                 if newValue == 1 {
                     showingCoachChat = true
                 }
+                previousTab = lastSelectedTab
+                lastSelectedTab = newValue
             }
             .fullScreenCover(isPresented: $showingCoachChat, content: {
-                CoachChatView(appState: AppState(), selectedTab: $selectedTab)
+                CoachChatView(appState: appState, selectedTab: $selectedTab,
+                              previousTab: $previousTab)
             })
             .environmentObject(appState)
             .onAppear {
                 let tabBarAppearance = UITabBarAppearance()
-                tabBarAppearance.backgroundColor = UIColor(Color.gray.opacity(0.1)) // Replace with your color
+                tabBarAppearance.backgroundColor = UIColor(Color.gray.opacity(0.1))
                 UITabBar.appearance().standardAppearance = tabBarAppearance
                 UITabBar.appearance().scrollEdgeAppearance = tabBarAppearance
             }
