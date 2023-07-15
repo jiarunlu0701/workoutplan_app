@@ -16,7 +16,6 @@ struct ContentView: View {
     }
 }
 
-
 struct BackgroundView: View {
     var body: some View {
         ZStack{
@@ -72,11 +71,19 @@ struct MainView: View {
                         Text("Calendar")
                     }.tag(2)
 
-                LoginView()
-                    .tabItem {
-                        Image(systemName: "person")
-                        Text("Me")
-                    }.tag(3)
+                if userAuth.isLoggedin {
+                    MeView()
+                        .tabItem {
+                            Image(systemName: "person")
+                            Text("Me")
+                        }.tag(3)
+                } else {
+                    LoginView()
+                        .tabItem {
+                            Image(systemName: "person")
+                            Text("Me")
+                        }.tag(3)
+                }
             }
             .onChange(of: selectedTab) { newValue in
                 if newValue == 1 {
@@ -100,6 +107,7 @@ struct MainView: View {
         }
     }
 }
+
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {

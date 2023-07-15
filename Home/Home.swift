@@ -5,7 +5,7 @@ struct Home: View {
     @State private var isShowingLoginView = false
     @StateObject private var appState = AppState()
     @State private var selectedDate: Date = Calendar.current.startOfDay(for: Date())
-    @State private var selectedSegment = "Workouts"  // Here is the state for segmented control
+    @State private var selectedSegment = "Workouts"
     
     var body: some View {
         ZStack {
@@ -13,7 +13,7 @@ struct Home: View {
             ScrollView(.vertical, showsIndicators: false){
                 VStack(spacing: 40) {
                     Text("")
-                    Text("Welcome")
+                    Text("Welcome \(userAuth.username)")
                         .font(.title)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     FitnessRingCardView()
@@ -192,6 +192,7 @@ struct CustomCheckmark: View {
 
 struct Home_Previews: PreviewProvider {
     static var previews: some View {
-        Home()
+        Home().environmentObject(UserAuth())
+
     }
 }

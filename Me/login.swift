@@ -7,7 +7,7 @@ struct LoginView: View {
     @State private var errorText = ""
     @State private var showingSignUp = false
     @EnvironmentObject var userAuth: UserAuth
-
+    
     var body: some View {
         ZStack{
             BackgroundView()
@@ -23,13 +23,15 @@ struct LoginView: View {
                     .background(Color.gray.opacity(0.2))
                     .cornerRadius(5.0)
                     .padding(.bottom, 20)
+                    .frame(width:350)
                 
                 SecureField("Password", text: $password)
                     .padding()
                     .background(Color.gray.opacity(0.2))
                     .cornerRadius(5.0)
                     .padding(.bottom, 20)
-                
+                    .frame(width:350)
+
                 if !errorText.isEmpty {
                     Text(errorText)
                         .font(.callout)
@@ -44,34 +46,17 @@ struct LoginView: View {
                         .padding(.horizontal)
                         .background(Color.gray.opacity(0.6))
                         .foregroundColor(.white)
-                        .cornerRadius(25)
+                        .cornerRadius(20)
                 }
                 
-                Button(action: { showingSignUp = true }) {
-                    Text("Sign Up")
-                        .fontWeight(.bold)
-                        .padding(.vertical, 10)
-                        .padding(.horizontal)
-                        .background(Color.gray.opacity(0.6))
-                        .foregroundColor(.white)
-                        .cornerRadius(25)
-                }
-                HStack {
-                    Button(action: {
-                        userAuth.signOut()
-                    }) {
-                        Text("Sign Out")
-                            .fontWeight(.bold)
-                            .padding(.vertical, 10)
-                            .padding(.horizontal)
-                            .background(Color.gray.opacity(0.6))
-                            .foregroundColor(.white)
-                            .cornerRadius(25)
+                Text("Don't have an account yet? Sign up here!")
+                    .underline()
+                    .foregroundColor(.black)
+                    .onTapGesture {
+                        showingSignUp = true
                     }
-                    .padding(.horizontal)
-                }
-                .sheet(isPresented: $showingSignUp) {
-                    SignUpView(isPresented: $showingSignUp)
+                    .sheet(isPresented: $showingSignUp) {
+                        SignUpView(isPresented: $showingSignUp)
                 }
             }
         }
