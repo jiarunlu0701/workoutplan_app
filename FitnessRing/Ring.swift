@@ -1,23 +1,22 @@
-//
-//  Ring.swift
-//  MinimalAnimation-2 (iOS)
-//
-//  Created by Balaji on 11/03/22.
-//
-
 import SwiftUI
 
-struct Ring: Identifiable{
+enum ImageIdentifier {
+    case system(name: String)
+    case local(name: String)
+}
+
+struct Ring: Identifiable {
     var id = UUID().uuidString
     var progress: CGFloat
     var value: String
-    var keyIcon: String
+    var keyIcon: ImageIdentifier
     var keyColor: Color
-    var isText: Bool = false
+    var iconColor: Color
 }
 
 var rings: [Ring] = [
-    Ring(progress: 72, value: "Steps", keyIcon: "figure.walk", keyColor: Color("Green")),
-    Ring(progress: 36, value: "Calories", keyIcon: "flame.fill", keyColor: Color("Red")),
-    Ring(progress: 91, value: "Sleep time", keyIcon: "😴", keyColor: Color("Purple"),isText: true)
+    Ring(progress: 36, value: "Overall Progress", keyIcon: .system(name: "line.diagonal.arrow"), keyColor: Color("Green"), iconColor: Color("Green")),
+    Ring(progress: 36, value: "Calories +/-", keyIcon: .system(name: "flame"), keyColor: Color("Red"), iconColor: Color("Red")),
+    Ring(progress: 50, value: "Protein", keyIcon: .local(name: "Protein"), keyColor: Color("Orange"), iconColor: Color("Orange")),
+    Ring(progress: 70, value: "Hydration", keyIcon: .system(name: "drop"), keyColor: Color("Blue"), iconColor: Color("Blue"))
 ]

@@ -25,14 +25,12 @@ struct BackgroundView: View {
                     .scaleEffect(0.6)
                     .offset(x: 20)
                     .blur(radius: 120)
-                
                 Circle()
                     .fill(Color("Red"))
                     .scaleEffect(0.6,anchor: .leading)
                     .offset(y: -20)
                     .blur(radius: 120)
             }
-            
             Rectangle()
                 .fill(.ultraThinMaterial)
         }
@@ -61,7 +59,7 @@ struct MainView: View {
                 BackgroundView()
                     .tabItem {
                         Image(systemName: "message")
-                        Text("Chat")
+                        Text("Coach")
                     }
                     .tag(1)
 
