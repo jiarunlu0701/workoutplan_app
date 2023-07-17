@@ -56,6 +56,12 @@ struct MainView: View {
                         Text("Home")
                     }.tag(0)
                 
+                Text("Coming up soon")
+                    .tabItem {
+                        Image(systemName: "cart")
+                        Text("cart")
+                    }.tag(2)
+                
                 BackgroundView()
                     .tabItem {
                         Image(systemName: "message")
@@ -63,7 +69,7 @@ struct MainView: View {
                     }
                     .tag(1)
 
-                Text("Calendar to be decided")
+                Text("Coming up soon")
                     .tabItem {
                         Image(systemName: "calendar")
                         Text("Calendar")

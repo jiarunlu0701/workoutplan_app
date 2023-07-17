@@ -17,6 +17,9 @@ class UserAuth: ObservableObject {
     
     init() {
         self.isLoggedin = Auth.auth().currentUser != nil
+        if let user = Auth.auth().currentUser {
+            self.userSession.userId = user.uid
+        }
         fetchUsernameAndPhoto()
     }
     
@@ -86,7 +89,11 @@ class UserAuth: ObservableObject {
             try Auth.auth().signOut()
             self.isLoggedin = false
             self.userSession.userId = nil
+            self.username = ""
+            self.userPhotoURL = nil
         } catch {
+            // Handle error
+            print("Error signing out: \(error)")
         }
     }
 }

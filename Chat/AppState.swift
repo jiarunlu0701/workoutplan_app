@@ -67,7 +67,7 @@ class AppState: ObservableObject {
         let systemPrompt =  """
         You are a fitness coach, the user is consulting you for fitness advice, talk in a very professional tone.
         
-        If the user asked you to create a workout plan, you always have to reply "Sure thing, but you have to fill this form first." You always have to reply this sentence without anymore add-ons because it is the prefix to call the function.
+        If the user asked you to create a workout plan, you always have to reply "Sure thing, but you have to fill this form first." You always have to reply this sentence without anymore add-ons because it is the prefix to call the function. If the user ask you about the other stuff related to workout plan, DO not print this sentence at all.
         """
         conversationMessages.append(newMessage)
         
@@ -96,8 +96,6 @@ class AppState: ObservableObject {
                             self.conversationMessages.append(newMessage)
                         }
                     }
-                    
-                    print("Received stream response: \(string)")
                     if completeResponseContent.contains("Sure thing, but you have to fill this form first.") {
                         self.showFormButton = true
                     } else {
@@ -107,7 +105,6 @@ class AppState: ObservableObject {
                 case .failure(_):
                     print("Something failed")
                 }
-                
             case .complete(_):
                 print("COMPLETE")
                 print(self.conversationMessages)
@@ -115,7 +112,49 @@ class AppState: ObservableObject {
         }
     }
     
-    
+    func summarizeWorkoutPlan(workoutPlanDescription: String) {
+        let systemPrompt = "You are a fitness assistant. Summarize the following workout plan: \n\(workoutPlanDescription)"
+        let systemMessage = Message(id: UUID().uuidString, role: .system, content: systemPrompt, createAt: Date())
+        conversationMessages.append(systemMessage)
+        var completeResponseContent: String = ""
+        
+        openAIServiceConversation.sendStreamMessage(messages: conversationMessages).responseStreamString { [weak self] stream in
+            guard let self = self else { return }
+
+            switch stream.event {
+            case .stream(let response):
+                switch response {
+                case .success(let string):
+                    let streamResponse = self.parseStreamData(string)
+                    
+                    streamResponse.forEach { newMessageResponse in
+                        guard let messageContent = newMessageResponse.choices.first?.delta.content else {
+                            return
+                        }
+                        
+                        if let existingMessageIndex = self.conversationMessages.lastIndex(where: {$0.id == newMessageResponse.id}) {
+                            let newMessage = Message(id: newMessageResponse.id, role: .assistant, content: self.conversationMessages[existingMessageIndex].content + messageContent, createAt: Date())
+                            self.conversationMessages[existingMessageIndex] = newMessage
+                            completeResponseContent += messageContent
+                        } else {
+                            let newMessage = Message(id: newMessageResponse.id, role: .assistant, content: messageContent, createAt: Date())
+                            self.conversationMessages.append(newMessage)
+                        }
+                    }
+                    
+                case .failure(_):
+                    print("Something failed")
+                }
+                
+            case .complete(_):
+                print("COMPLETE")
+                print(completeResponseContent)
+            }
+        }
+    }
+
+
+
     func generateWorkoutPlan(userMessage: String) {
         let currentService: OpenAIService
         currentService = openAIServiceWorkout
@@ -442,6 +481,7 @@ class AppState: ObservableObject {
                 
             case .complete(_):
                 print("COMPLETE")
+                self.summarizeWorkoutPlan(workoutPlanDescription: completeResponseContent)
                 if let userId = UserAuth.getCurrentUserId() {
                     self.workoutManager.saveWorkoutPhasesForUser(userId: userId)
                 } else {

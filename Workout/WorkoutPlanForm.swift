@@ -1,9 +1,10 @@
 import SwiftUI
+import FirebaseFirestore
+import Firebase
 
 struct WorkoutPlanForm: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.presentationMode) var presentationMode: Binding<PresentationMode>
-    
     @State private var age = ""
     @State private var gender = ""
     @State private var weight = ""
@@ -24,6 +25,7 @@ struct WorkoutPlanForm: View {
     @State private var squatWeight = ""
     @State private var dynamicExercises = false
     @State private var additionalNotes = ""
+    let db = Firestore.firestore()
 
     var body: some View {
         NavigationView {
@@ -81,7 +83,6 @@ struct WorkoutPlanForm: View {
             .navigationTitle("Workout Plan Form")
         }
     }
-
     func generatePlan() {
         let dateFormatter = DateFormatter()
         dateFormatter.dateStyle = .short
@@ -118,10 +119,31 @@ struct WorkoutPlanForm: View {
         Additional Notes: \(additionalNotes)
         """
         print(planDetails)
+        if let userId = UserAuth.getCurrentUserId() {
+            saveGeneratePlan(userId: userId, planDetails: planDetails)
+        } else {
+            print("Error: Could not get the current user ID.")
+        }
         appState.generateWorkoutPlan(userMessage: planDetails)
         self.presentationMode.wrappedValue.dismiss()
     }
+    
+    func saveGeneratePlan(userId: String, planDetails: String) {
+        let docData: [String: Any] = [
+            "planDetails": planDetails,
+            "createdAt": Timestamp(date: Date())
+        ]
+
+        db.collection("WorkoutForm").document(userId).setData(docData) { error in
+            if let error = error {
+                print("Error writing document: \(error)")
+            } else {
+                print("Document successfully written!")
+            }
+        }
+    }
 }
+
 
 struct WorkoutPlanForm_Previews: PreviewProvider {
     @State static var selectedTab = 0
