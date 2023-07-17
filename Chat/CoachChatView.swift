@@ -1,8 +1,13 @@
 import SwiftUI
 
+extension View {
+    func endEditing() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+}
+
 struct CoachChatView: View {
     @ObservedObject var appState: AppState
-    let decoder = JSONDecoder()
     private let openAIService = OpenAIService()
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var userSession: UserSession
@@ -36,9 +41,10 @@ struct CoachChatView: View {
                     }
                 }
                 .padding()
-                ScrollViewReader { proxy in
+
+                ScrollViewReader {proxy in
                     ScrollView {
-                        ForEach(appState.messages.filter({$0.role != .system}), id: \.self.id) { message in
+                        ForEach(appState.allMessages.filter({$0.role != .system}), id: \.self.id) { message in
                             messageView(message: message)
                                 .id(message.id)
                         }
@@ -48,7 +54,7 @@ struct CoachChatView: View {
                     .onAppear {
                         proxy.scrollTo(bottomPaddingID)
                     }
-                    .onChange(of: appState.messages) { _ in
+                    .onChange(of: allMessages()) { _ in
                         DispatchQueue.main.async {
                             withAnimation {
                                 if !isScrolling {
@@ -66,6 +72,8 @@ struct CoachChatView: View {
                     
                     Button(action: {
                         appState.sendMessage()
+                        appState.currentInput = ""
+                        self.endEditing()
                     }) {
                         Image(systemName: "paperplane")
                             .resizable()
@@ -96,6 +104,11 @@ struct CoachChatView: View {
                 }
             if message.role == .assistant { Spacer() }
         }
+    }
+    
+    func allMessages() -> [Message] {
+        return (appState.workoutMessages + appState.conversationMessages)
+            .sorted(by: {$0.createAt < $1.createAt})
     }
     
     func scrollToBottom(_ proxy: ScrollViewProxy) {

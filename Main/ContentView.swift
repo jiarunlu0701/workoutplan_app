@@ -94,6 +94,7 @@ struct MainView: View {
                 CoachChatView(appState: appState, selectedTab: $selectedTab,
                               previousTab: $previousTab)
             })
+            
             .environmentObject(appState)
             .onAppear {
                 let tabBarAppearance = UITabBarAppearance()
