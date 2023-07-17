@@ -15,7 +15,7 @@ struct Ring: Identifiable {
 }
 
 var rings: [Ring] = [
-    Ring(progress: 36, value: "Overall Progress", keyIcon: .system(name: "line.diagonal.arrow"), keyColor: Color("Green"), iconColor: Color("Green")),
+    Ring(progress: 36, value: "Completion", keyIcon: .system(name: "line.diagonal.arrow"), keyColor: Color("Green"), iconColor: Color("Green")),
     Ring(progress: 36, value: "Calories +/-", keyIcon: .system(name: "flame"), keyColor: Color("Red"), iconColor: Color("Red")),
     Ring(progress: 50, value: "Protein", keyIcon: .local(name: "Protein"), keyColor: Color("Orange"), iconColor: Color("Orange")),
     Ring(progress: 70, value: "Hydration", keyIcon: .system(name: "drop"), keyColor: Color("Blue"), iconColor: Color("Blue"))
