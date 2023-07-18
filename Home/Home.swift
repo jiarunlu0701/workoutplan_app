@@ -2,7 +2,9 @@ import SwiftUI
 
 struct Home: View {
     @EnvironmentObject var userAuth: UserAuth
+    @State private var isFlipped = false
     @State private var isShowingLoginView = false
+    @StateObject private var ringViewModel = RingViewModel()
     @StateObject private var appState = AppState()
     @State private var selectedDate: Date = Calendar.current.startOfDay(for: Date())
     @State private var selectedSegment = "Workouts"
@@ -16,7 +18,20 @@ struct Home: View {
                     Text("Welcome \(userAuth.username)")
                         .font(.title)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    FitnessRingCardView()
+                    
+                    ZStack {
+                        if isFlipped {
+                            DetailView(isFlip: $isFlipped)
+                                .environmentObject(ringViewModel)
+                                .scaleEffect(x: -1)
+                        } else {
+                            FitnessRingCardView(isFlip: $isFlipped)
+                                .environmentObject(ringViewModel)
+                        }
+                    }
+                    .flipEffect(isFlipped: $isFlipped, angle: Angle(degrees: isFlipped ? 180 : 0))
+
+                                        
                     DateScrollBar(selectedDate: $selectedDate, workoutManager: appState.workoutManager)
                         .padding(.horizontal)
                         .padding(.top, 10)
@@ -192,7 +207,9 @@ struct CustomCheckmark: View {
 
 struct Home_Previews: PreviewProvider {
     static var previews: some View {
-        Home().environmentObject(UserAuth())
+        Home()
+            .environmentObject(UserAuth())
+            .environmentObject(RingViewModel())
 
     }
 }

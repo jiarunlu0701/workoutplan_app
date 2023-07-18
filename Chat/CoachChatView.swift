@@ -71,7 +71,6 @@ struct CoachChatView: View {
                     
                     HStack {
                         TextField("Enter a message...", text: $appState.currentInput)
-                        
                         Button(action: {
                             appState.sendMessage()
                             appState.currentInput = ""

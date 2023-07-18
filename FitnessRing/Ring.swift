@@ -5,18 +5,28 @@ enum ImageIdentifier {
     case local(name: String)
 }
 
-struct Ring: Identifiable {
+class Ring: Identifiable, ObservableObject {
     var id = UUID().uuidString
-    var progress: CGFloat
+    @Published var progress: CGFloat
     var value: String
     var keyIcon: ImageIdentifier
     var keyColor: Color
     var iconColor: Color
+
+    init(progress: CGFloat, value: String, keyIcon: ImageIdentifier, keyColor: Color, iconColor: Color) {
+        self.progress = progress
+        self.value = value
+        self.keyIcon = keyIcon
+        self.keyColor = keyColor
+        self.iconColor = iconColor
+    }
 }
 
-var rings: [Ring] = [
-    Ring(progress: 36, value: "Completion", keyIcon: .system(name: "line.diagonal.arrow"), keyColor: Color("Green"), iconColor: Color("Green")),
-    Ring(progress: 36, value: "Calories +/-", keyIcon: .system(name: "flame"), keyColor: Color("Red"), iconColor: Color("Red")),
-    Ring(progress: 50, value: "Protein", keyIcon: .local(name: "Protein"), keyColor: Color("Orange"), iconColor: Color("Orange")),
-    Ring(progress: 70, value: "Hydration", keyIcon: .system(name: "drop"), keyColor: Color("Blue"), iconColor: Color("Blue"))
-]
+class RingViewModel: ObservableObject {
+    @Published var rings: [Ring] = [
+        Ring(progress: 36, value: "Completion", keyIcon: .system(name: "line.diagonal.arrow"), keyColor: Color.green, iconColor: Color.green),
+        Ring(progress: 36, value: "Calories +/-", keyIcon: .system(name: "flame"), keyColor: Color.red, iconColor: Color.red),
+        Ring(progress: 50, value: "Protein", keyIcon: .local(name: "Protein"), keyColor: Color.orange, iconColor: Color.orange),
+        Ring(progress: 70, value: "Hydration", keyIcon: .system(name: "drop.fill"), keyColor: Color.blue, iconColor: Color.blue)
+    ]
+}

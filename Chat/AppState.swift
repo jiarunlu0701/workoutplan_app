@@ -153,8 +153,6 @@ class AppState: ObservableObject {
         }
     }
 
-
-
     func generateWorkoutPlan(userMessage: String) {
         let currentService: OpenAIService
         currentService = openAIServiceWorkout
