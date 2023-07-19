@@ -78,5 +78,7 @@ class RingViewModel: ObservableObject {
         let percentage = (CGFloat(userInput) / minValue) * 100
         ring.progress = minValue != 0 ? percentage : 0
         ring.minValue = minValue
+        rings.append(Ring(progress: 0, value: "Force Update", keyIcon: .system(name: "circle"), keyColor: Color.white, iconColor: Color.white))
+        rings.removeLast()
     }
 }

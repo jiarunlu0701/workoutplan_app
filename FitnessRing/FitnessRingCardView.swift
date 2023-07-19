@@ -37,7 +37,7 @@ struct FitnessRingCardView: View {
                                     Text("\(Int(ringViewModel.rings[index].userInput)) / \(Int(ringViewModel.rings[index].minValue))")
                                         .font(.title3.bold())
                                     
-                                    Text(ringViewModel.rings[index].value)
+                                    Text(unit(for: ringViewModel.rings[index].value))  // Display unit information only
                                         .font(.caption)
                                 }
                             } icon: {
@@ -73,12 +73,28 @@ struct FitnessRingCardView: View {
             }
         }
     }
+    
+    private func unit(for value: String) -> String {
+        switch value {
+        case "Completion":
+            return ""
+        case "Calories +/-":
+            return "kcal"
+        case "Protein":
+            return "g"
+        case "Hydration":
+            return "ml"
+        default:
+            return ""
+        }
+    }
 }
 
 struct DetailView: View {
     @EnvironmentObject var ringViewModel: RingViewModel
     @Binding var isFlip: Bool
-    
+    @State private var newUserInput = [String: String]()
+
     var body: some View {
         VStack(spacing: 15){
             HStack {
@@ -99,35 +115,81 @@ struct DetailView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     ForEach(ringViewModel.rings.indices, id: \.self){ index in
                         HStack {
+                            let ring = ringViewModel.rings[index]
                             Label {
                                 HStack(alignment: .bottom, spacing: 6) {
-                                    TextField("%", value: $ringViewModel.rings[index].userInput, formatter: NumberFormatter())
+                                    Text("\(Int(ring.userInput)) / \(Int(ring.minValue))")
                                         .font(.title3.bold())
-                                        .onChange(of: ringViewModel.rings[index].userInput) { newValue in
-                                            ringViewModel.updateUserInputForRing(ringViewModel.rings[index], userInput: Float(newValue))
-                                        }
-                                    
-                                    Text(ringViewModel.rings[index].value)
-                                        .font(.caption)
                                 }
                             } icon: {
                                 Group {
-                                    switch ringViewModel.rings[index].keyIcon {
+                                    switch ring.keyIcon {
                                     case .system(let name):
                                         Image(systemName: name)
                                             .resizable()
                                             .scaledToFit()
                                             .frame(width: 25, height: 25)
-                                            .foregroundColor(ringViewModel.rings[index].iconColor)
+                                            .foregroundColor(ring.iconColor)
                                     case .local(let name):
                                         Image(name)
                                             .resizable()
                                             .scaledToFit()
                                             .frame(width: 25, height: 25)
-                                            .foregroundColor(ringViewModel.rings[index].iconColor)
+                                            .foregroundColor(ring.iconColor)
                                     }
                                 }
                                 .frame(width: 30)
+                            }
+                            
+                            if ring.value != "Completion" {
+                                HStack {
+                                    Text(ring.value)  // Display the name of the row
+                                        .font(.caption)
+                                        .frame(width: 100, alignment: .leading)
+                                    
+                                    Spacer()
+                                    
+                                    TextField("Input", text: Binding(
+                                        get: { self.newUserInput[ring.id, default: ""] },
+                                        set: { self.newUserInput[ring.id] = $0 }
+                                    ))
+                                    .keyboardType(.numberPad)
+                                    .frame(width: 50)
+                                    
+                                    Spacer()
+                                    
+                                    Button(action: {
+                                        if let newValue = NumberFormatter().number(from: newUserInput[ring.id] ?? "")?.floatValue {
+                                            var existingValue = Float(ring.userInput)
+                                            
+                                            if existingValue == 0 {
+                                              return
+                                            }
+                                            
+                                            ringViewModel.updateUserInputForRing(ring, userInput: existingValue - newValue)
+                                            newUserInput[ring.id] = ""
+                                        }
+                                    }) {
+                                        Image(systemName: "minus")
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: 25, height: 25)
+                                            .padding(.top)
+                                    }
+                                    
+                                    Button(action: {
+                                        if let newValue = NumberFormatter().number(from: newUserInput[ring.id] ?? "")?.floatValue {
+                                            ringViewModel.updateUserInputForRing(ring, userInput: Float(ring.userInput) + newValue)
+                                            newUserInput[ring.id] = ""
+                                        }
+                                    }) {
+                                        Image(systemName: "plus")
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: 25, height: 25)
+                                            .padding(.top)
+                                    }
+                                }
                             }
                         }
                     }
@@ -144,7 +206,6 @@ struct DetailView: View {
         }
     }
 }
-
 
 struct FlipEffect: AnimatableModifier {
     var animatableData: Double
