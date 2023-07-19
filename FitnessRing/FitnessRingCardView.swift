@@ -29,16 +29,13 @@ struct FitnessRingCardView: View {
                         }
                     }
                     .frame(width: 130, height: 130)
-                    
                     VStack(alignment: .leading, spacing: 12) {
                         ForEach(ringViewModel.rings.indices, id: \.self){ index in
                             Label {
+                                Spacer()
                                 HStack(alignment: .bottom, spacing: 6) {
                                     Text("\(Int(ringViewModel.rings[index].userInput)) / \(Int(ringViewModel.rings[index].minValue))")
                                         .font(.title3.bold())
-                                    
-                                    Text(unit(for: ringViewModel.rings[index].value))  // Display unit information only
-                                        .font(.caption)
                                 }
                             } icon: {
                                 Group {
@@ -58,6 +55,9 @@ struct FitnessRingCardView: View {
                                     }
                                 }
                                 .frame(width: 30)
+                                let ring = ringViewModel.rings[index]
+                                Text(ring.value)
+                                    .font(.caption)
                             }
                         }
                     }
@@ -71,21 +71,6 @@ struct FitnessRingCardView: View {
                 RoundedRectangle(cornerRadius: 25, style: .continuous)
                     .fill(Color(.secondarySystemBackground))
             }
-        }
-    }
-    
-    private func unit(for value: String) -> String {
-        switch value {
-        case "Completion":
-            return ""
-        case "Calories +/-":
-            return "kcal"
-        case "Protein":
-            return "g"
-        case "Hydration":
-            return "ml"
-        default:
-            return ""
         }
     }
 }
@@ -120,6 +105,10 @@ struct DetailView: View {
                                 HStack(alignment: .bottom, spacing: 6) {
                                     Text("\(Int(ring.userInput)) / \(Int(ring.minValue))")
                                         .font(.title3.bold())
+                                    
+                                    Text(unit(for: ringViewModel.rings[index].value))  // Display unit information only
+                                        .font(.caption)
+                                    Spacer()
                                 }
                             } icon: {
                                 Group {
@@ -143,12 +132,6 @@ struct DetailView: View {
                             
                             if ring.value != "Completion" {
                                 HStack {
-                                    Text(ring.value)  // Display the name of the row
-                                        .font(.caption)
-                                        .frame(width: 100, alignment: .leading)
-                                    
-                                    Spacer()
-                                    
                                     TextField("Input", text: Binding(
                                         get: { self.newUserInput[ring.id, default: ""] },
                                         set: { self.newUserInput[ring.id] = $0 }
@@ -165,8 +148,14 @@ struct DetailView: View {
                                             if existingValue == 0 {
                                               return
                                             }
+                                            if existingValue - newValue < 0 {
+                                                        // Ensure the result is not negative, if required
+                                                        existingValue = 0
+                                                    } else {
+                                                        existingValue -= newValue
+                                                    }
                                             
-                                            ringViewModel.updateUserInputForRing(ring, userInput: existingValue - newValue)
+                                            ringViewModel.updateUserInputForRing(ring, userInput: existingValue)
                                             newUserInput[ring.id] = ""
                                         }
                                     }) {
@@ -203,6 +192,20 @@ struct DetailView: View {
         .background{
             RoundedRectangle(cornerRadius: 25, style: .continuous)
                 .fill(Color(.secondarySystemBackground))
+        }
+    }
+    private func unit(for value: String) -> String {
+        switch value {
+        case "Completion":
+            return ""
+        case "Calories +/-":
+            return "kcal"
+        case "Protein":
+            return "g"
+        case "Hydration":
+            return "ml"
+        default:
+            return ""
         }
     }
 }
