@@ -4,6 +4,7 @@ import UIKit
 
 class AppState: ObservableObject {
     @Published var workoutManager = WorkoutManager()
+    @Published var dietManager = DietManager()
     @Published var conversationMessages: [Message] = [
         Message(
             id: "first-conversation-message",
@@ -20,16 +21,25 @@ class AppState: ObservableObject {
             createAt: Date()
         )
     ]
+    @Published var dietMessages: [Message] = [
+        Message(
+            id: "first-diet-message",
+            role: .system,
+            content: "",
+            createAt: Date()
+        )
+    ]
     @Published var showFormButton: Bool = false
     
     var currentInput: String = ""
     private let openAIServiceConversation = OpenAIService()
     private let openAIServiceWorkout = OpenAIService()
+    private let openAIServiceDiet = OpenAIService()
     private let decoder = JSONDecoder()
     private var responseChunks: String = ""
     
     var allMessages: [Message] {
-        return (workoutMessages + conversationMessages).sorted { $0.createAt < $1.createAt }
+        return (workoutMessages + conversationMessages + dietMessages).sorted { $0.createAt < $1.createAt }
     }
     
     func processWorkoutPlan(workoutPlanString: String, userId: String) {
@@ -112,8 +122,12 @@ class AppState: ObservableObject {
         }
     }
     
-    func summarizeWorkoutPlan(workoutPlanDescription: String) {
-        let systemPrompt = "You are a fitness assistant. Summarize the following workout plan: \n\(workoutPlanDescription)"
+    func summarizeWorkoutPlan(workoutPlanDescription: String, workoutPlanInfo: String) {
+        let systemPrompt = """
+        You are a fitness coach, and you created this workoutPlanDescription: \(workoutPlanDescription) based on this workoutPlanInfo: \(workoutPlanInfo).
+        Explain to the trainee in a professional way the reasons you pick these exercises for him/her in around 100 to 200 words.
+        """
+        
         let systemMessage = Message(id: UUID().uuidString, role: .system, content: systemPrompt, createAt: Date())
         conversationMessages.append(systemMessage)
         var completeResponseContent: String = ""
@@ -479,7 +493,7 @@ class AppState: ObservableObject {
                 
             case .complete(_):
                 print("COMPLETE")
-                self.summarizeWorkoutPlan(workoutPlanDescription: completeResponseContent)
+                self.summarizeWorkoutPlan(workoutPlanDescription: completeResponseContent , workoutPlanInfo: userMessage)
                 if let userId = UserAuth.getCurrentUserId() {
                     self.workoutManager.saveWorkoutPhasesForUser(userId: userId)
                 } else {
@@ -489,6 +503,93 @@ class AppState: ObservableObject {
         }
     }
     
+    func generateDietPlan(userMessage: String) {
+        let currentService: OpenAIService
+        currentService = openAIServiceDiet
+        let systemPrompt =
+        """
+            User's Diet Plan Information:"\(userMessage)"
+            "When ask you to create diet plan, the nutrition content must have to take very great consideration of user's Diet Plan Information. Create more diets if needed, and adjust food_sources if needed. You must ONLY return a diet plan without saying else.
+            To create diet plan, you must fill in the blanks in this template and only in this format, the diet plan you created is running in a swift program and be use for decode to display on a UI, so the keeping the correct format is the key (Must start with DietPlan: [{ as prefix is this. DietPlan: [
+        {
+              "date": str("yyyy-mm-dd"),
+               "total_calories": {
+                "min": float(),
+                "max": float()
+                },
+               "protein": {
+                  "min": float(),
+                  "max": float()
+                },
+                "carbohydrates": {
+                  "min": float(),
+                  "max": float()
+                },
+                "hydration" : {
+                  "min": float(),
+                  "max": float()
+                },
+                "fats": {
+                  "min": float(),
+                  "max": float()
+                },
+              "food_sources": {
+                "lean_proteins": ["str", "str", "str", "str", "str", "str", "str"],
+                "complex_carbohydrates": ["str", "str", "str", "str", "str"],
+                "healthy_fats": ["str", "str", "str", "str", "str"],
+                "fruits_and_vegetables": ["str", "str", "str", "str", "str"],
+              },
+              "plan_explanation": "str"
+            }
+        ]
+        """
+        var completeResponseContent: String = ""
+
+        let systemMessage = Message(id: UUID().uuidString, role: .system, content: systemPrompt, createAt: Date())
+        dietMessages.append(systemMessage)
+        
+        currentService.sendStreamMessage(messages: dietMessages).responseStreamString { [weak self] stream in
+            guard let self = self else { return }
+                        
+            switch stream.event {
+            case .stream(let response):
+                switch response {
+                case .success(let string):
+                    let streamResponse = self.parseStreamData(string)
+                    
+                    streamResponse.forEach { newMessageResponse in
+                        guard let messageContent = newMessageResponse.choices.first?.delta.content else {
+                            return
+                        }
+                        guard let existingMessageIndex = self.dietMessages.lastIndex(where: { $0.id == newMessageResponse.id }) else {
+                            let newMessage = Message(id: newMessageResponse.id, role: .assistant, content: messageContent, createAt: Date())
+                            self.dietMessages.append(newMessage)
+                            return
+                        }
+                        let newMessage = Message(id: newMessageResponse.id, role: .assistant, content: self.dietMessages[existingMessageIndex].content + messageContent, createAt: Date())
+                        self.dietMessages[existingMessageIndex] = newMessage
+                        completeResponseContent += messageContent
+                        print(completeResponseContent)
+                    }
+                    if completeResponseContent.contains("DietPlan: ") {
+                        let dietPlanString = completeResponseContent.replacingOccurrences(of: "DietPlan: ", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
+                        self.dietManager.decodeDietPlan(from: dietPlanString)
+                    }
+                case .failure(_):
+                    print("Something failed")
+                }
+                
+            case .complete(_):
+                print("COMPLETE")
+                if let userId = UserAuth.getCurrentUserId() {
+                    self.dietManager.saveDietPlanForUser(userId: userId)
+                } else {
+                    print("No user is currently signed in.")
+                }
+            }
+        }
+    }
+
     func parseStreamData(_ data: String) -> [ChatStreamCompletionResponse] {
         let responseStrings = data.split(separator: "data:").map({$0.trimmingCharacters(in: .whitespacesAndNewlines)}).filter({!$0.isEmpty})
         let jsonDecoder = JSONDecoder()

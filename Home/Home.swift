@@ -2,6 +2,7 @@ import SwiftUI
 
 struct Home: View {
     @EnvironmentObject var userAuth: UserAuth
+    @StateObject private var dietManager = DietManager()
     @State private var isFlipped = false
     @State private var isShowingLoginView = false
     @StateObject private var ringViewModel = RingViewModel()
@@ -30,8 +31,7 @@ struct Home: View {
                         }
                     }
                     .flipEffect(isFlipped: $isFlipped, angle: Angle(degrees: isFlipped ? 180 : 0))
-
-                                        
+                    
                     DateScrollBar(selectedDate: $selectedDate, workoutManager: appState.workoutManager)
                         .padding(.horizontal)
                         .padding(.top, 10)
@@ -47,19 +47,21 @@ struct Home: View {
                         ExerciseContent(date: selectedDate, workoutManager: appState.workoutManager)
                     } else if selectedSegment == "Diet Plan" {
                         DietPlanContent(date: selectedDate)
+                            .environmentObject(dietManager) // pass DietManager as an environment object
                     }
                     
                 }
                 .onAppear {
                     if let userId = UserAuth.getCurrentUserId() {
                         appState.workoutManager.fetchWorkoutPhasesForUser(userId: userId)
+                        dietManager.fetchDietPlansForUser(userId: userId) // fetch diet plans
                     }
                 }
                 .padding(.horizontal)
-                }
             }
         }
     }
+}
 
 struct DateScrollBar: View {
     @Binding var selectedDate: Date
@@ -183,10 +185,79 @@ struct ExerciseView: View {
 }
 
 struct DietPlanContent: View {
+    @EnvironmentObject var dietManager: DietManager
     let date: Date
+    let formatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
+    
     var body: some View {
-        // Add your content for diet plan here
-        Text("Diet Plan for \(date)")
+        VStack {
+            if let dietPlan = dietManager.dietPlans.first(where: { formatter.date(from: $0.date) == date }) {
+                
+                Text("Date: \(dietPlan.date)")
+                    .font(.headline)
+                    .padding()
+                
+                Text("Total Calories: Min: \(dietPlan.total_calories["min"] ?? 0) kcal, Max: \(dietPlan.total_calories["max"] ?? 0) kcal")
+                    .font(.subheadline)
+                    .padding(.horizontal)
+                
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Protein:")
+                        .font(.subheadline)
+                    Text("Min: \(dietPlan.protein["min"] ?? 0) g, Max: \(dietPlan.protein["max"] ?? 0) g")
+                        .font(.subheadline)
+                    Text("Carbohydrates:")
+                        .font(.subheadline)
+                    Text("Min: \(dietPlan.carbohydrates["min"] ?? 0) g, Max: \(dietPlan.carbohydrates["max"] ?? 0) g")
+                        .font(.subheadline)
+                    Text("Hydration:")
+                        .font(.subheadline)
+                    Text("Min: \(dietPlan.hydration["min"] ?? 0) L, Max: \(dietPlan.hydration["max"] ?? 0) L")
+                        .font(.subheadline)
+                    Text("Fats:")
+                        .font(.subheadline)
+                    Text("Min: \(dietPlan.fats["min"] ?? 0) g, Max: \(dietPlan.fats["max"] ?? 0) g")
+                        .font(.subheadline)
+                }
+                .padding(.horizontal)
+                
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Food Sources")
+                        .font(.title)
+                        .bold()
+                        .padding(.top)
+                    
+                    ForEach(dietPlan.food_sources.keys.sorted(), id: \.self) { category in
+                        VStack(alignment: .leading) {
+                            Text(category.capitalized)
+                                .font(.subheadline)
+                                .bold()
+                                .padding(.top)
+                            
+                            ForEach(dietPlan.food_sources[category] ?? [], id: \.self) { food in
+                                Text(food)
+                                    .font(.subheadline)
+                                    .padding(.leading)
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+                }
+                
+                Text("Plan Explanation: \(dietPlan.plan_explanation)")
+                    .font(.subheadline)
+                    .padding(.horizontal)
+                
+            } else {
+                Text("No diet plan available for this date")
+                    .font(.headline)
+            }
+        }
+        .padding()
     }
 }
 
@@ -210,6 +281,6 @@ struct Home_Previews: PreviewProvider {
         Home()
             .environmentObject(UserAuth())
             .environmentObject(RingViewModel())
-
+            .environmentObject(DietManager())
     }
 }

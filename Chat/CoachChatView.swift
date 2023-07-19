@@ -121,7 +121,7 @@ struct CoachChatView: View {
 
 
     func allMessages() -> [Message] {
-        return (appState.workoutMessages + appState.conversationMessages)
+        return (appState.workoutMessages + appState.conversationMessages + appState.dietMessages)
             .sorted(by: {$0.createAt < $1.createAt})
     }
     

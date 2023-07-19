@@ -7,18 +7,18 @@ struct FitnessRingCardView: View {
     var body: some View {
         VStack(spacing: 15){
             HStack{
-                            Text("Progress")
-                                .fontWeight(.semibold)
-                                .frame(maxWidth: .infinity,alignment: .leading)
-                            Button(action: {
-                                withAnimation(.easeInOut(duration: 0.6)) {
-                                    self.isFlip = true
-                                }
-                            }) {
-                                Image(systemName: "rotate.right")
-                                    .foregroundColor(.black)
-                            }
-                        }
+                Text("Progress")
+                    .fontWeight(.semibold)
+                    .frame(maxWidth: .infinity,alignment: .leading)
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.6)) {
+                        self.isFlip = true
+                    }
+                }) {
+                    Image(systemName: "rotate.right")
+                        .foregroundColor(.gray)
+                }
+            }
             HStack(spacing: 20){
                 ZStack{
                     ForEach(ringViewModel.rings.indices, id: \.self){ index in
@@ -85,8 +85,8 @@ struct DetailView: View {
                                     self.isFlip = false
                                 }
                             }) {
-                                Image(systemName: "rotate.right")
-                                    .foregroundColor(.black)
+                                Image(systemName: "rotate.left")
+                                    .foregroundColor(.gray)
                             }
                         }
             
