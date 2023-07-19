@@ -5,68 +5,72 @@ struct FitnessRingCardView: View {
     @Binding var isFlip: Bool
 
     var body: some View {
-        VStack(spacing: 15){
-            HStack{
-                Text("Progress")
-                    .fontWeight(.semibold)
-                    .frame(maxWidth: .infinity,alignment: .leading)
-                Button(action: {
-                    withAnimation(.easeInOut(duration: 0.6)) {
-                        self.isFlip = true
-                    }
-                }) {
-                    Image(systemName: "rotate.right")
-                        .foregroundColor(.gray)
-                }
-            }
-            HStack(spacing: 20){
-                ZStack{
-                    ForEach(ringViewModel.rings.indices, id: \.self){ index in
-                        AnimatedRingView(ring: ringViewModel.rings[index], index: index)
+        if ringViewModel.isLoading {
+            ProgressView("Loading...")
+        } else {
+            VStack(spacing: 15){
+                HStack{
+                    Text("Progress")
+                        .fontWeight(.semibold)
+                        .frame(maxWidth: .infinity,alignment: .leading)
+                    Button(action: {
+                        withAnimation(.easeInOut(duration: 0.6)) {
+                            self.isFlip = true
+                        }
+                    }) {
+                        Image(systemName: "rotate.right")
+                            .foregroundColor(.gray)
                     }
                 }
-                .frame(width: 130, height: 130)
-                
-                VStack(alignment: .leading, spacing: 12) {
-                    ForEach(ringViewModel.rings.indices, id: \.self){ index in
-                        Label {
-                            HStack(alignment: .bottom, spacing: 6) {
-                                Text("\(Int(ringViewModel.rings[index].progress))%")
-                                    .font(.title3.bold())
-                                
-                                Text(ringViewModel.rings[index].value)
-                                    .font(.caption)
-                            }
-                        } icon: {
-                            Group {
-                                switch ringViewModel.rings[index].keyIcon {
-                                case .system(let name):
-                                    Image(systemName: name)
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(width: 25, height: 25)
-                                        .foregroundColor(ringViewModel.rings[index].iconColor)
-                                case .local(let name):
-                                    Image(name)
-                                        .resizable()
-                                        .scaledToFit()
-                                        .frame(width: 25, height: 25)
-                                        .foregroundColor(ringViewModel.rings[index].iconColor)
-                                }
-                            }
-                            .frame(width: 30)
+                HStack(spacing: 20){
+                    ZStack{
+                        ForEach(ringViewModel.rings.indices, id: \.self){ index in
+                            AnimatedRingView(ring: ringViewModel.rings[index], index: index)
                         }
                     }
+                    .frame(width: 130, height: 130)
+                    
+                    VStack(alignment: .leading, spacing: 12) {
+                        ForEach(ringViewModel.rings.indices, id: \.self){ index in
+                            Label {
+                                HStack(alignment: .bottom, spacing: 6) {
+                                    Text("\(Int(ringViewModel.rings[index].userInput)) / \(Int(ringViewModel.rings[index].minValue))")
+                                        .font(.title3.bold())
+                                    
+                                    Text(ringViewModel.rings[index].value)
+                                        .font(.caption)
+                                }
+                            } icon: {
+                                Group {
+                                    switch ringViewModel.rings[index].keyIcon {
+                                    case .system(let name):
+                                        Image(systemName: name)
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: 25, height: 25)
+                                            .foregroundColor(ringViewModel.rings[index].iconColor)
+                                    case .local(let name):
+                                        Image(name)
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: 25, height: 25)
+                                            .foregroundColor(ringViewModel.rings[index].iconColor)
+                                    }
+                                }
+                                .frame(width: 30)
+                            }
+                        }
+                    }
+                    .padding(.leading,10)
                 }
-                .padding(.leading,10)
+                .padding(.top,20)
             }
-            .padding(.top,20)
-        }
-        .padding(.horizontal,20)
-        .padding(.vertical,25)
-        .background{
-            RoundedRectangle(cornerRadius: 25, style: .continuous)
-                .fill(Color(.secondarySystemBackground))
+            .padding(.horizontal,20)
+            .padding(.vertical,25)
+            .background{
+                RoundedRectangle(cornerRadius: 25, style: .continuous)
+                    .fill(Color(.secondarySystemBackground))
+            }
         }
     }
 }
@@ -74,21 +78,22 @@ struct FitnessRingCardView: View {
 struct DetailView: View {
     @EnvironmentObject var ringViewModel: RingViewModel
     @Binding var isFlip: Bool
+    
     var body: some View {
         VStack(spacing: 15){
             HStack {
-                            Text("Input")
-                                .fontWeight(.semibold)
-                                .frame(maxWidth: .infinity,alignment: .leading)
-                            Button(action: {
-                                withAnimation(.easeInOut(duration: 0.6)) {
-                                    self.isFlip = false
-                                }
-                            }) {
-                                Image(systemName: "rotate.left")
-                                    .foregroundColor(.gray)
-                            }
-                        }
+                Text("Input")
+                    .fontWeight(.semibold)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.6)) {
+                        self.isFlip = false
+                    }
+                }) {
+                    Image(systemName: "rotate.left")
+                        .foregroundColor(.gray)
+                }
+            }
             
             HStack(spacing: 20){
                 VStack(alignment: .leading, spacing: 12) {
@@ -96,8 +101,11 @@ struct DetailView: View {
                         HStack {
                             Label {
                                 HStack(alignment: .bottom, spacing: 6) {
-                                    TextField("%", value: $ringViewModel.rings[index].progress, formatter: NumberFormatter())
+                                    TextField("%", value: $ringViewModel.rings[index].userInput, formatter: NumberFormatter())
                                         .font(.title3.bold())
+                                        .onChange(of: ringViewModel.rings[index].userInput) { newValue in
+                                            ringViewModel.updateUserInputForRing(ringViewModel.rings[index], userInput: Float(newValue))
+                                        }
                                     
                                     Text(ringViewModel.rings[index].value)
                                         .font(.caption)
@@ -136,6 +144,7 @@ struct DetailView: View {
         }
     }
 }
+
 
 struct FlipEffect: AnimatableModifier {
     var animatableData: Double

@@ -25,7 +25,6 @@ struct DietPlan: Codable, Identifiable {
         case plan_explanation
     }
 
-    // As we need a dictionary, we can use Encodable functionality
     func asDictionary() throws -> [String: Any] {
         let data = try JSONEncoder().encode(self)
         guard let dictionary = try JSONSerialization.jsonObject(with: data, options: .allowFragments) as? [String: Any] else {
