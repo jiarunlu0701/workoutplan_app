@@ -3,9 +3,8 @@ import SwiftUI
 struct FitnessRingCardView: View {
     @EnvironmentObject var ringViewModel: RingViewModel
     @Binding var isFlip: Bool
-
     var body: some View {
-        if ringViewModel.isLoading {
+        if !ringViewModel.isDataLoaded {
             ProgressView("Loading...")
         } else {
             VStack(spacing: 15){
@@ -71,8 +70,12 @@ struct FitnessRingCardView: View {
                 RoundedRectangle(cornerRadius: 25, style: .continuous)
                     .fill(Color(.secondarySystemBackground))
             }
+            .onAppear {
+                ringViewModel.loadData()
+            }
         }
     }
+    
 }
 
 struct DetailView: View {
@@ -234,28 +237,36 @@ extension View {
 }
 
 struct AnimatedRingView: View {
+    @EnvironmentObject var ringViewModel: RingViewModel
     var ring: Ring
     var index: Int
     @State var showRing: Bool = false
     
     var body: some View{
-        ZStack{
-            Circle()
-                .stroke(Color.gray.opacity(0.3),lineWidth: 10)
-            
-            Circle()
-                .trim(from: 0, to: showRing ? ring.progress / 100 : 0)
-                .stroke(ring.keyColor, style: StrokeStyle(lineWidth: 10, lineCap: .round, lineJoin: .round))
-                .rotationEffect(.init(degrees: -90))
-        }
-        .padding(CGFloat(index) * 16)
-        .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                withAnimation(.interactiveSpring(response: 1, dampingFraction: 1, blendDuration: 1).delay(Double(index) * 0.1)){
-                    showRing = true
+        Group {
+            if ringViewModel.isLoading || ring.minValue == 0 || ring.userInput == 0 {
+                ProgressView("Loading...")
+            } else {
+                ZStack{
+                    Circle()
+                        .stroke(Color.gray.opacity(0.3),lineWidth: 10)
+                    
+                    Circle()
+                        .trim(from: 0, to: showRing ? ring.progress / 100 : 0)
+                        .stroke(ring.keyColor, style: StrokeStyle(lineWidth: 10, lineCap: .round, lineJoin: .round))
+                        .rotationEffect(.init(degrees: -90))
+                }
+                .padding(CGFloat(index) * 16)
+                .onAppear {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                        withAnimation(.interactiveSpring(response: 1, dampingFraction: 1, blendDuration: 1).delay(Double(index) * 0.1)){
+                            showRing = true
+                        }
+                    }
                 }
             }
         }
     }
 }
+
 

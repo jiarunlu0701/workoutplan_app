@@ -35,7 +35,8 @@ class RingViewModel: ObservableObject {
     private var cancellables: Set<AnyCancellable> = []
     @Published var fetchedUserInputs: [Ring] = []
     @Published var isLoading = true
-    
+    @Published var isDataLoaded = false
+
     init() {
         rings = [
             Ring(progress: 0, value: "Carbohydrates", keyIcon: .system(name: "bolt"), keyColor: Color.green, iconColor: Color.green),
@@ -43,7 +44,7 @@ class RingViewModel: ObservableObject {
             Ring(progress: 0, value: "Protein", keyIcon: .local(name: "Protein"), keyColor: Color.orange, iconColor: Color.orange),
             Ring(progress: 0, value: "Hydration", keyIcon: .system(name: "drop.fill"), keyColor: Color.blue, iconColor: Color.blue)
         ]
-        
+        loadData()
         if let userId = UserAuth.getCurrentUserId() {
             dietManager.fetchMinValuesForUser(userId: userId)
         }
@@ -62,6 +63,13 @@ class RingViewModel: ObservableObject {
             }
             .store(in: &cancellables)
     
+        fetchUserInputsFromFirestore()
+    }
+    
+    func loadData() {
+        if let userId = UserAuth.getCurrentUserId() {
+            dietManager.fetchMinValuesForUser(userId: userId)
+        }
         fetchUserInputsFromFirestore()
     }
     
@@ -102,6 +110,7 @@ class RingViewModel: ObservableObject {
                 } ?? []
             }
             self.updateRingsWithFetchedUserInputs()
+            self.isDataLoaded = true
         }
     }
     
