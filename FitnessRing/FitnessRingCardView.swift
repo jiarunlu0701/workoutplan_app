@@ -75,7 +75,6 @@ struct FitnessRingCardView: View {
             }
         }
     }
-    
 }
 
 struct DetailView: View {
@@ -191,6 +190,9 @@ struct DetailView: View {
             }
             .padding(.top,20)
         }
+        .onAppear(perform: {
+            ringViewModel.loadData()
+        })
         .padding(.horizontal,20)
         .padding(.vertical,25)
         .background{
@@ -244,7 +246,7 @@ struct AnimatedRingView: View {
     
     var body: some View{
         Group {
-            if ringViewModel.isLoading || ring.minValue == 0 || ring.userInput == 0 {
+            if ringViewModel.isLoading{
                 ProgressView("Loading...")
             } else {
                 ZStack{
@@ -268,5 +270,4 @@ struct AnimatedRingView: View {
         }
     }
 }
-
 

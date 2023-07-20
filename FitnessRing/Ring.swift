@@ -44,7 +44,7 @@ class RingViewModel: ObservableObject {
             Ring(progress: 0, value: "Protein", keyIcon: .local(name: "Protein"), keyColor: Color.orange, iconColor: Color.orange),
             Ring(progress: 0, value: "Hydration", keyIcon: .system(name: "drop.fill"), keyColor: Color.blue, iconColor: Color.blue)
         ]
-        loadData()
+
         if let userId = UserAuth.getCurrentUserId() {
             dietManager.fetchMinValuesForUser(userId: userId)
         }
@@ -110,9 +110,10 @@ class RingViewModel: ObservableObject {
                 } ?? []
             }
             self.updateRingsWithFetchedUserInputs()
-            self.isDataLoaded = true
+            self.isDataLoaded = true  // Set isDataLoaded to true here, after fetch attempt.
         }
     }
+
     
     func updateRingsWithFetchedUserInputs() {
         for fetchedRing in fetchedUserInputs {
