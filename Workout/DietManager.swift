@@ -38,6 +38,7 @@ class DietManager: ObservableObject {
     @Published var minCalories: Float = 0
     @Published var minProtein: Float = 0
     @Published var minHydration: Float = 0
+    @Published var minCarbohydrates: Float = 0
     @Published var dietPlans: [DietPlan] = []
     let db = Firestore.firestore()
     
@@ -98,6 +99,7 @@ class DietManager: ObservableObject {
                             self.minCalories = dietPlan.total_calories["min"] ?? 0
                             self.minProtein = dietPlan.protein["min"] ?? 0
                             self.minHydration = dietPlan.hydration["min"] ?? 0
+                            self.minCarbohydrates = dietPlan.carbohydrates["min"] ?? 0  
                         }
                     }
                 }

@@ -10,7 +10,7 @@ struct FitnessRingCardView: View {
         } else {
             VStack(spacing: 15){
                 HStack{
-                    Text("Progress")
+                    Text("Nutrition Intake")
                         .fontWeight(.semibold)
                         .frame(maxWidth: .infinity,alignment: .leading)
                     Button(action: {
@@ -149,7 +149,6 @@ struct DetailView: View {
                                               return
                                             }
                                             if existingValue - newValue < 0 {
-                                                        // Ensure the result is not negative, if required
                                                         existingValue = 0
                                                     } else {
                                                         existingValue -= newValue
@@ -158,6 +157,7 @@ struct DetailView: View {
                                             ringViewModel.updateUserInputForRing(ring, userInput: existingValue)
                                             newUserInput[ring.id] = ""
                                         }
+                                        ringViewModel.storeUserInputInFirestore(ring: ring)
                                     }) {
                                         Image(systemName: "minus")
                                             .resizable()
@@ -171,6 +171,7 @@ struct DetailView: View {
                                             ringViewModel.updateUserInputForRing(ring, userInput: Float(ring.userInput) + newValue)
                                             newUserInput[ring.id] = ""
                                         }
+                                        ringViewModel.storeUserInputInFirestore(ring: ring)
                                     }) {
                                         Image(systemName: "plus")
                                             .resizable()
@@ -196,8 +197,8 @@ struct DetailView: View {
     }
     private func unit(for value: String) -> String {
         switch value {
-        case "Completion":
-            return ""
+        case "Carbohydrates":
+            return "g"
         case "Calories +/-":
             return "kcal"
         case "Protein":
