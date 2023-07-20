@@ -16,7 +16,7 @@ class Ring: Identifiable, ObservableObject {
     var keyColor: Color
     var iconColor: Color
     @Published var userInput: CGFloat
-    @Published var minValue: CGFloat  // Add min value
+    @Published var minValue: CGFloat
 
     init(progress: CGFloat, value: String, keyIcon: ImageIdentifier, keyColor: Color, iconColor: Color, userInput: CGFloat = 0, minValue: CGFloat = 0) {
         self.progress = progress
@@ -31,6 +31,12 @@ class Ring: Identifiable, ObservableObject {
 
 class RingViewModel: ObservableObject {
     @ObservedObject private var dietManager = DietManager()
+    @Published var needsRefresh: Bool = false
+    @Published var userAuth = UserAuth() {
+        didSet {
+            loadData()
+        }
+    }
     @Published var rings: [Ring]
     private var cancellables: Set<AnyCancellable> = []
     @Published var fetchedUserInputs: [Ring] = []
@@ -62,17 +68,42 @@ class RingViewModel: ObservableObject {
                 }
             }
             .store(in: &cancellables)
-    
+
         fetchUserInputsFromFirestore()
+        
+        userAuth.$isLoggedin
+            .sink { isLoggedIn in
+                DispatchQueue.main.async {
+                    self.loadData()
+                }
+            }
+            .store(in: &cancellables)
+        NotificationCenter.default.addObserver(self, selector: #selector(userLoggedIn), name: NSNotification.Name("UserLoggedIn"), object: nil)
+    }
+    
+    @objc func userLoggedIn() {
+        self.needsRefresh = true
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
     
     func loadData() {
         if let userId = UserAuth.getCurrentUserId() {
             dietManager.fetchMinValuesForUser(userId: userId)
+            fetchUserInputsFromFirestore()
+        } else {
+            for ring in rings {
+                ring.userInput = 0
+                ring.progress = 0
+                ring.minValue = 0
+            }
+            isLoading = false
+            isDataLoaded = true
         }
-        fetchUserInputsFromFirestore()
     }
-    
+
     func storeUserInputInFirestore(ring: Ring) {
         let db = Firestore.firestore()
         
@@ -110,7 +141,7 @@ class RingViewModel: ObservableObject {
                 } ?? []
             }
             self.updateRingsWithFetchedUserInputs()
-            self.isDataLoaded = true  // Set isDataLoaded to true here, after fetch attempt.
+            self.isDataLoaded = true
         }
     }
 

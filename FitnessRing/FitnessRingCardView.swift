@@ -73,6 +73,12 @@ struct FitnessRingCardView: View {
             .onAppear {
                 ringViewModel.loadData()
             }
+            .onChange(of: ringViewModel.needsRefresh) { needsRefresh in
+                if needsRefresh {
+                    ringViewModel.loadData()
+                    ringViewModel.needsRefresh = false
+                }
+            }
         }
     }
 }
@@ -270,4 +276,3 @@ struct AnimatedRingView: View {
         }
     }
 }
-
