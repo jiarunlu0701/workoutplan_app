@@ -126,14 +126,8 @@ struct HeartRateRangeChart: View {
                 AxisValueLabel(format: .dateTime.minute(.twoDigits))
             }
         }
-        .chartYAxis {
-            AxisMarks(values: .stride(by: ChartStrideBy.minute.time)) { _ in
-                AxisTick()
-                AxisGridLine()
-                AxisValueLabel(format: .dateTime.minute(.twoDigits))
-            }
-        }
         .accessibilityChartDescriptor(self)
+        .chartYAxis(isOverview ? .hidden : .automatic)
         .chartYScale(domain: [Double(minValue), Double(maxValue)])
         .chartXAxis(isOverview ? .hidden : .automatic)
         .frame(height: isOverview ? 500 : 200)
