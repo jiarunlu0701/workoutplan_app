@@ -1,4 +1,5 @@
 import SwiftUI
+import HealthKit
 import UIKit
 
 struct ContentView: View {
@@ -46,6 +47,7 @@ struct MainView: View {
     @State private var previousTab: Int = 0
     @State private var showingCoachChat = false
     @StateObject private var ringViewModel = RingViewModel() // If you initialize it like this
+    @StateObject private var healthKitManager = HealthKitManager()
 
     var body: some View {
         VStack {
@@ -57,12 +59,15 @@ struct MainView: View {
                         Text("Home")
                     }.tag(0)
                 
-                CalendarView()
+                CalendarView(heartRateSamples: healthKitManager.heartRates.values.flatMap { $0 })
                     .environmentObject(ringViewModel) // passing ringViewModel here
+                    .environmentObject(healthKitManager) // passing healthKitManager here
                     .tabItem {
                         Image(systemName: "calendar")
                         Text("Calendar")
-                    }.tag(2)
+                    }
+                    .tag(2)
+
                 
                 BackgroundView()
                     .tabItem {

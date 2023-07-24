@@ -2,138 +2,26 @@ import SwiftUI
 import DGCharts
 import HealthKit
 import Foundation
+import Charts
 
-enum ChartStrideBy: Identifiable, CaseIterable {
-    case second
-    case minute
-    case hour
-    case day
-    case weekday
-    case weekOfYear
-    case month
-    case year
-    
-    var id: String { title }
-    
-    var title: String {
-        switch self {
-        case .second:
-            return "Second"
-        case .minute:
-            return "Minute"
-        case .hour:
-            return "Hour"
-        case .day:
-            return "Day"
-        case .weekday:
-            return "Weekday"
-        case .weekOfYear:
-            return "Week of Year"
-        case .month:
-            return "Month"
-        case .year:
-            return "Year"
-        }
-    }
-    
-    var time: Calendar.Component {
-        switch self {
-        case .second:
-            return .second
-        case .minute:
-            return .minute
-        case .hour:
-            return .hour
-        case .day:
-            return .day
-        case .weekday:
-            return .weekday
-        case .weekOfYear:
-            return .weekOfYear
-        case .month:
-            return .month
-        case .year:
-            return .year
-        }
-    }
+struct MinutelyHRSample {
+    let minute: Date
+    let minHR: Int
+    let maxHR: Int
+    let avgHR: Int
 }
 
-struct HeartRateChartView: UIViewRepresentable {
-    var heartRateSamples: [HKQuantitySample]
-    let heartRateUnit = HKUnit.count().unitDivided(by: HKUnit.minute())
-    // Create a stride of 5 minutes
-    let stride = ChartStrideBy.minute.time
-    func makeUIView(context: Context) -> BarChartView {
-        let chartView = BarChartView()
-        chartView.rightAxis.enabled = false
-        chartView.leftAxis.axisMinimum = 0
-        chartView.leftAxis.axisMaximum = 200
-        chartView.xAxis.labelPosition = .bottom
-        chartView.xAxis.valueFormatter = DateValueFormatter(samples: heartRateSamples, stride: stride)
-        
-        let entries = heartRateSamples.enumerated().map { index, sample in
-            BarChartDataEntry(x: Double(index), y: sample.quantity.doubleValue(for: heartRateUnit))
-        }
-        
-        let dataSet = BarChartDataSet(entries: entries)
-        dataSet.colors = [NSUIColor.red]
-        let data = BarChartData(dataSet: dataSet)
-        
-        chartView.data = data
-        
-        return chartView
-    }
-    
-    func updateUIView(_ uiView: BarChartView, context: Context) {}
-}
-    
-    class DateValueFormatter: AxisValueFormatter {
-        let dateFormatter = DateFormatter()
-        let samples: [HKQuantitySample]
-        let stride: Calendar.Component
-        
-        init(samples: [HKQuantitySample], stride: Calendar.Component) {
-            self.samples = samples
-            self.stride = stride
-            dateFormatter.dateFormat = "HH:mm"
-        }
-        
-        func stringForValue(_ value: Double, axis: AxisBase?) -> String {
-            let date = samples[Int(value)].startDate
-            
-            // Apply the stride
-            let stridedDate = Calendar.current.date(byAdding: stride, value: Int(value), to: date) ?? date
-            
-            return dateFormatter.string(from: stridedDate)
-        }
-    }
-
-struct HeartRatePoint: Identifiable {
-    let id = UUID()
-    let time: Date
-    let rate: Double
-}
-
-struct HRSample: Identifiable {
-    let id = UUID()
-    let date: Date
-    let min: Int
-    let max: Int
-}
 
 struct CalendarView: View {
+    @State private var barWidth = 10.0
+    @State private var chartColor: Color = .red
     @EnvironmentObject var dietManager: DietManager
     @EnvironmentObject var ringViewModel: RingViewModel
     @StateObject private var appState = AppState()
     @StateObject private var healthKitManager = HealthKitManager()
     @State private var selectedDate: Date = Calendar.current.startOfDay(for: Date())
-    
-    let formatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter
-    }()
     let heartRateUnit = HKUnit.count().unitDivided(by: HKUnit.minute())
+    var heartRateSamples: [HKQuantitySample]  // Add this property
 
     var body: some View {
         ZStack {
@@ -159,7 +47,7 @@ struct CalendarView: View {
                         Text("Today's Workouts")
                             .font(.title)
                             .padding(.bottom, 10)
-                        ForEach(healthKitManager.workouts, id: \.uuid) { workout in
+                        ForEach(healthKitManager.workouts, id: \.uuid) { (workout: HKWorkout) in
                             VStack(alignment: .leading) {
                                 Text(workout.workoutActivityType.name)
                                     .font(.headline)
@@ -168,8 +56,10 @@ struct CalendarView: View {
                                 Text("Distance: \(workout.totalDistance?.doubleValue(for: .mile()) ?? 0, specifier: "%.2f") miles")
                                 if let heartRates = healthKitManager.heartRates[workout] {
                                     Text("Average Heart Rate: \(averageHeartRate(samples: heartRates)) bpm")
-                                    HeartRateChartView(heartRateSamples: heartRates)
-                                        .frame(height: 300)
+                                    HeartRateRangeChart(isOverview: false, data: healthKitManager)
+                                        .frame(height: 1000)
+                                } else {
+                                    EmptyView()
                                 }
                             }
                             .padding(.bottom, 10)
@@ -189,6 +79,43 @@ struct CalendarView: View {
                 healthKitManager.getTodayWorkouts()
             }
         }
+    }
+    
+    func groupHeartRateSamplesByMinute(heartRates: [HKQuantitySample]) -> [(Double, (min: Int, max: Int, avg: Int))] {
+        var groups: [(Double, (min: Int, max: Int, avg: Int))] = []
+        var currentGroup: [Double] = []
+        var currentMinute: Date? = nil
+
+        for (index, sample) in heartRates.enumerated() {
+            let heartRate = sample.quantity.doubleValue(for: heartRateUnit)
+            currentGroup.append(heartRate)
+
+            // Use the first sample's date as the minute indicator
+            if currentMinute == nil {
+                currentMinute = sample.startDate
+            }
+
+            if currentGroup.count == 4 { // Group every 4 samples (every minute)
+                let minHeartRate = Int(currentGroup.min()!)
+                let maxHeartRate = Int(currentGroup.max()!)
+                let avgHeartRate = Int(currentGroup.reduce(0, +) / Double(currentGroup.count))
+                let minutes = currentMinute!.timeIntervalSince1970 / 60
+                groups.append((minutes, (min: minHeartRate, max: maxHeartRate, avg: avgHeartRate)))
+                currentGroup.removeAll() // Clear for the next group
+                currentMinute = nil // Reset the minute
+            }
+        }
+
+        // Handle last group if it has less than 4 samples
+        if !currentGroup.isEmpty {
+            let minHeartRate = Int(currentGroup.min()!)
+            let maxHeartRate = Int(currentGroup.max()!)
+            let avgHeartRate = Int(currentGroup.reduce(0, +) / Double(currentGroup.count))
+            let minutes = currentMinute!.timeIntervalSince1970 / 60
+            groups.append((minutes, (min: minHeartRate, max: maxHeartRate, avg: avgHeartRate)))
+        }
+
+        return groups
     }
     
     func averageHeartRate(samples: [HKQuantitySample]) -> Double {
@@ -273,4 +200,3 @@ struct FitnessRingView: View {
         }
     }
 }
-
