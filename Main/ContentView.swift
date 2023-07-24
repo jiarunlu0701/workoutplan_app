@@ -45,6 +45,7 @@ struct MainView: View {
     @State private var lastSelectedTab: Int = 0
     @State private var previousTab: Int = 0
     @State private var showingCoachChat = false
+    @StateObject private var ringViewModel = RingViewModel() // If you initialize it like this
 
     var body: some View {
         VStack {
@@ -56,10 +57,11 @@ struct MainView: View {
                         Text("Home")
                     }.tag(0)
                 
-                Text("Coming up soon")
+                CalendarView()
+                    .environmentObject(ringViewModel) // passing ringViewModel here
                     .tabItem {
-                        Image(systemName: "cart")
-                        Text("cart")
+                        Image(systemName: "calendar")
+                        Text("Calendar")
                     }.tag(2)
                 
                 BackgroundView()
@@ -68,25 +70,25 @@ struct MainView: View {
                         Text("Coach")
                     }
                     .tag(1)
-
+                
                 Text("Coming up soon")
                     .tabItem {
-                        Image(systemName: "calendar")
-                        Text("Calendar")
-                    }.tag(2)
+                        Image(systemName: "cart")
+                        Text("cart")
+                    }.tag(3)
 
                 if userAuth.isLoggedin {
                     MeView()
                         .tabItem {
                             Image(systemName: "person")
                             Text("Me")
-                        }.tag(3)
+                        }.tag(4)
                 } else {
                     LoginView()
                         .tabItem {
                             Image(systemName: "person")
                             Text("Me")
-                        }.tag(3)
+                        }.tag(4)
                 }
             }
             .onChange(of: selectedTab) { newValue in

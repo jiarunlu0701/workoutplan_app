@@ -47,7 +47,7 @@ class DietManager: ObservableObject {
         dietPlans.forEach { dietPlan in
             do {
                 let dietPlanDict = try dietPlan.asDictionary()
-                userDocument.collection("plans").addDocument(data: dietPlanDict) { error in
+                userDocument.collection("plans").document(userId).setData(dietPlanDict) { error in
                     if let error = error {
                         print("Error saving diet plan: \(error.localizedDescription)")
                     } else {

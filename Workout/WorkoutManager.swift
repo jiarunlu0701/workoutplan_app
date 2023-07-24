@@ -41,39 +41,50 @@ class WorkoutManager: ObservableObject {
     @Published var workoutPhases: [WorkoutPhase] = []
     let db = Firestore.firestore()
     
-    func saveWorkoutPhasesForUser(userId: String) {
+    func saveWorkoutPlanForUser(userId: String) {
         let userDocument = db.collection("workoutPhases").document(userId)
-        workoutPhases.forEach {workoutPhase in
-            do {
+        do {
+            var workoutPhasesArray = [[String: Any]]()
+            for workoutPhase in workoutPhases {
                 let workoutPhaseDict = try workoutPhase.asDictionary()
-                userDocument.collection("phases").addDocument(data: workoutPhaseDict) { error in
-                    if let error = error {
-                        print("Error saving workout phase: \(error.localizedDescription)")
-                    } else {
-                        print("Workout phase successfully saved.")
-                    }
-                }
-            } catch {
-                print("Error converting workout phase to dictionary: \(error.localizedDescription)")
+                workoutPhasesArray.append(workoutPhaseDict)
             }
+            let data = ["workoutPhases": workoutPhasesArray]
+            
+            userDocument.setData(data) { error in
+                if let error = error {
+                    print("Error saving workout plan: \(error.localizedDescription)")
+                } else {
+                    print("Workout plan successfully saved.")
+                }
+            }
+        } catch {
+            print("Error converting workout phase to dictionary: \(error.localizedDescription)")
         }
     }
+
     
     func fetchWorkoutPhasesForUser(userId: String) {
         let userDocument = db.collection("workoutPhases").document(userId)
         
-        userDocument.collection("phases").getDocuments { (querySnapshot, error) in
+        userDocument.getDocument { (document, error) in
             if let error = error {
-                print("Error getting documents: \(error)")
+                print("Error getting document: \(error)")
             } else {
-                self.workoutPhases = querySnapshot?.documents.compactMap { queryDocumentSnapshot -> WorkoutPhase? in
-                    let data = try? JSONSerialization.data(withJSONObject: queryDocumentSnapshot.data(), options: [])
+                guard let document = document, document.exists,
+                      let workoutPhasesData = document.data()?["workoutPhases"] as? [[String: Any]] else {
+                    print("Document does not exist or workoutPhases not found.")
+                    return
+                }
+                
+                self.workoutPhases = workoutPhasesData.compactMap { workoutPhaseData -> WorkoutPhase? in
+                    let data = try? JSONSerialization.data(withJSONObject: workoutPhaseData, options: [])
                     if let data = data, let workoutPhase = try? JSONDecoder().decode(WorkoutPhase.self, from: data) {
                         return workoutPhase
                     } else {
                         return nil
                     }
-                } ?? []
+                }
             }
         }
     }

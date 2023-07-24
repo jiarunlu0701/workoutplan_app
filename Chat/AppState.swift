@@ -495,7 +495,7 @@ class AppState: ObservableObject {
                 print("COMPLETE")
                 self.summarizeWorkoutPlan(workoutPlanDescription: completeResponseContent , workoutPlanInfo: userMessage)
                 if let userId = UserAuth.getCurrentUserId() {
-                    self.workoutManager.saveWorkoutPhasesForUser(userId: userId)
+                    self.workoutManager.saveWorkoutPlanForUser(userId: userId)
                 } else {
                     print("No user is currently signed in.")
                 }
