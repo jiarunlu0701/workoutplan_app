@@ -109,7 +109,7 @@ class HealthKitManager: ObservableObject {
     func getTodayWorkouts() {
         let calendar = Calendar.current
         let now = Date()
-        let startOfDay = calendar.date(byAdding: .day, value: -1, to: calendar.startOfDay(for: now)) // Get start of yesterday
+        let startOfDay = calendar.date(byAdding: .day, value: -2, to: calendar.startOfDay(for: now)) // Get start of yesterday
         let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: now, options: .strictStartDate)
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
         let query = HKSampleQuery(sampleType: .workoutType(), predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: [sortDescriptor]) { (query, samples, error) in

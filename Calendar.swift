@@ -57,7 +57,8 @@ struct CalendarView: View {
                                 if let heartRates = healthKitManager.heartRates[workout] {
                                     Text("Average Heart Rate: \(averageHeartRate(samples: heartRates)) bpm")
                                     HeartRateRangeChart(isOverview: false, data: healthKitManager)
-                                        .frame(height: 1000)
+                                        .frame(height: 360)
+                                        .background(Color.clear) // Set the chart's background to clear
                                 } else {
                                     EmptyView()
                                 }
@@ -86,7 +87,7 @@ struct CalendarView: View {
         var currentGroup: [Double] = []
         var currentMinute: Date? = nil
 
-        for (index, sample) in heartRates.enumerated() {
+        for (_, sample) in heartRates.enumerated() {
             let heartRate = sample.quantity.doubleValue(for: heartRateUnit)
             currentGroup.append(heartRate)
 

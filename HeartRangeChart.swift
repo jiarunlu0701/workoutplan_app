@@ -58,47 +58,33 @@ enum ChartStrideBy: Identifiable, CaseIterable {
 
 struct HeartRateRangeChart: View {
     var isOverview: Bool
-
     @ObservedObject var data: HealthKitManager  // Use HealthKitManager as observed object
-
-    @State private var barWidth = 10.0
+    
+    @State private var barWidth = 5.0
     @State private var chartColor: Color = .red
-
+    
     private func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateStyle = .short
         formatter.timeStyle = .short
         return formatter.string(from: date)
     }
-
+    
     var body: some View {
-        if isOverview {
-            chart
-        } else {
-            List {
-                Section(header: header) {
-                    chart
+        Group {
+            if isOverview {
+                chart.background(Color.white) // Set chart background to white
+            } else {
+                List {
+                    Section(header: header) {
+                        chart
+                    }
                 }
-
-                customisation
+                .listStyle(PlainListStyle()) // Use plain list style
+                .background(Color.white) // Set list background to white
             }
         }
-    }
-
-    private var customisation: some View {
-        Section {
-            VStack(alignment: .leading) {
-                Text("Bar Width: \(barWidth, specifier: "%.1f")")
-                Slider(value: $barWidth, in: 5...20) {
-                    Text("Bar Width")
-                } minimumValueLabel: {
-                    Text("5")
-                } maximumValueLabel: {
-                    Text("20")
-                }
-            }
-            ColorPicker("Color Picker", selection: $chartColor)
-        }
+        .environment(\.colorScheme, .light) // enforce light mode
     }
 
     private var chart: some View {
@@ -120,7 +106,7 @@ struct HeartRateRangeChart: View {
             .accessibilityHidden(isOverview)
         }
         .chartXAxis {
-            AxisMarks(values: .stride(by: ChartStrideBy.minute.time)) { _ in
+            AxisMarks(values: .stride(by: 2)) { _ in
                 AxisTick()
                 AxisGridLine()
                 AxisValueLabel(format: .dateTime.minute(.twoDigits))
@@ -131,6 +117,7 @@ struct HeartRateRangeChart: View {
         .chartYScale(domain: [Double(minValue), Double(maxValue)])
         .chartXAxis(isOverview ? .hidden : .automatic)
         .frame(height: isOverview ? 500 : 200)
+        .background(Color.white)  // Set the background color here
     }
 
     private var header: some View {
@@ -147,7 +134,6 @@ struct HeartRateRangeChart: View {
 }
 
 // MARK: - Accessibility
-
 extension HeartRateRangeChart: AXChartDescriptorRepresentable {
     func makeChartDescriptor() -> AXChartDescriptor {
         let min = data.heartRateGroups.map(\.minHR).min() ?? 0
@@ -186,7 +172,6 @@ extension HeartRateRangeChart: AXChartDescriptorRepresentable {
 }
 
 // MARK: - Preview
-
 struct HeartRateRangeChart_Previews: PreviewProvider {
     static var previews: some View {
         HeartRateRangeChart(isOverview: true, data: HealthKitManager())
