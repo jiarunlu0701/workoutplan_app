@@ -62,15 +62,15 @@ struct CalendarView: View {
                                 if let heartRates = healthKitManager.heartRates[workout] {
                                     Text("Average Heart Rate: \(averageHeartRate(samples: heartRates)) bpm")
                                     if healthKitManager.isHeartRateDataLoading {
-                                            ProgressView("Loading Heart Rate Data...")
-                                        } else if let heartRateGroups = healthKitManager.heartRateGroups[workout] {
-                                            HeartRateRangeChart(isOverview: false, data: heartRateGroups, selectedWorkout: workout)
-                                                .onAppear {
-                                                    healthKitManager.selectedWorkout = workout  // set selected workout
-                                                }
-                                                .frame(height: 360)
-                                                .background(Color.clear) // Set the chart's background to clear
-                                        }
+                                        ProgressView("Loading Heart Rate Data...")
+                                    } else if let heartRateGroups = healthKitManager.heartRateGroups[workout], !heartRateGroups.isEmpty {
+                                        HeartRateRangeChart(isOverview: false, data: heartRateGroups, selectedWorkout: workout)
+                                            .onAppear {
+                                                healthKitManager.selectedWorkout = workout  // set selected workout
+                                            }
+                                            .frame(height: 360)
+                                            .background(Color.clear) // Set the chart's background to clear
+                                    }
                                 } else {
                                     EmptyView()
                                 }
