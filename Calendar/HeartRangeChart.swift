@@ -64,22 +64,28 @@ struct HeartRateRangeChart: View {
 
     @State private var barWidth = 5.0
     @State private var chartColor: Color = .red
-    
+    @State private var isHeartRateDataLoading = true // Add this state variable
+
     private func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateStyle = .short
         formatter.timeStyle = .short
         return formatter.string(from: date)
     }
-    
+
     var body: some View {
         Group {
             if isOverview {
-                chart.background(Color.white) // Set chart background to white
+                chart
+                    .background(Color.white) // Set chart background to white
+                    .overlay(loadingOverlay) // Add loading overlay
             } else {
                 List {
                     Section(header: header) {
                         chart
+                            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                            .background(Color.white) // Set chart background to white
+                            .overlay(loadingOverlay) // Add loading overlay
                     }
                 }
                 .listStyle(PlainListStyle()) // Use plain list style
@@ -87,39 +93,61 @@ struct HeartRateRangeChart: View {
             }
         }
         .environment(\.colorScheme, .light) // enforce light mode
+        .onAppear {
+            // Simulate loading with a slight delay (you can replace this with your actual loading logic)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                isHeartRateDataLoading = false
+            }
+        }
     }
 
+    @ViewBuilder
     private var chart: some View {
-        let minValue = Double(data.map(\.minHR).min() ?? 0)
-        let maxValue = Double(data.map(\.maxHR).max() ?? 0)
-        return Chart(data, id: \.minute) { dataPoint in
-            Plot {
-                BarMark(
-                    x: .value("Minute", dataPoint.minute, unit: .minute),
-                    yStart: .value("HR Min", dataPoint.minHR),
-                    yEnd: .value("HR Max", dataPoint.maxHR),
-                    width: .fixed(isOverview ? 8 : barWidth)
-                )
-                .clipShape(Capsule())
-                .foregroundStyle(chartColor.gradient)
+        // Display a ProgressView while loading the chart data
+        if isHeartRateDataLoading {
+            ProgressView("Loading Heart Rate Data...")
+                .frame(height: isOverview ? 500 : 200) // Set the frame to match the chart height
+        } else {
+            let minValue = Double(data.map(\.minHR).min() ?? 0)
+            let maxValue = Double(data.map(\.maxHR).max() ?? 0)
+            Chart(data, id: \.minute) { dataPoint in
+                Plot {
+                    BarMark(
+                        x: .value("Minute", dataPoint.minute, unit: .minute),
+                        yStart: .value("HR Min", dataPoint.minHR),
+                        yEnd: .value("HR Max", dataPoint.maxHR),
+                        width: .fixed(isOverview ? 8 : barWidth)
+                    )
+                    .clipShape(Capsule())
+                    .foregroundStyle(chartColor.gradient)
+                }
+                .accessibilityLabel(formatDate(dataPoint.minute))
+                .accessibilityValue("\(Int(dataPoint.minHR)) to \(Int(dataPoint.maxHR)) BPM")
+                .accessibilityHidden(isOverview)
             }
-            .accessibilityLabel(formatDate(dataPoint.minute))
-            .accessibilityValue("\(Int(dataPoint.minHR)) to \(Int(dataPoint.maxHR)) BPM")
-            .accessibilityHidden(isOverview)
-        }
-        .chartXAxis {
-            AxisMarks(values: .stride(by: 2)) { _ in
-                AxisTick()
-                AxisGridLine()
-                AxisValueLabel(format: .dateTime.minute(.twoDigits))
+            .chartXAxis {
+                AxisMarks(values: .stride(by: 2)) { _ in
+                    AxisTick()
+                    AxisGridLine()
+                    AxisValueLabel(format: .dateTime.minute(.twoDigits))
+                }
             }
+            .accessibilityChartDescriptor(self)
+            .chartYAxis(isOverview ? .hidden : .automatic)
+            .chartYScale(domain: [Double(minValue), Double(maxValue)])
+            .chartXAxis(isOverview ? .hidden : .automatic)
+            .frame(height: isOverview ? 500 : 200)
+            .background(Color.white)  // Set the background color here
         }
-        .accessibilityChartDescriptor(self)
-        .chartYAxis(isOverview ? .hidden : .automatic)
-        .chartYScale(domain: [Double(minValue), Double(maxValue)])
-        .chartXAxis(isOverview ? .hidden : .automatic)
-        .frame(height: isOverview ? 500 : 200)
-        .background(Color.white)  // Set the background color here
+    }
+    
+    private var loadingOverlay: some View {
+        Color.black.opacity(0.3)
+            .edgesIgnoringSafeArea(.all)
+            .overlay(
+                ProgressView("Loading Heart Rate Data...")
+                    .foregroundColor(.white)
+            )
     }
 
     private var header: some View {
