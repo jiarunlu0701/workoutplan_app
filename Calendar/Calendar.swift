@@ -38,7 +38,7 @@ struct CalendarView: View {
                     Text("Resting Calories: \(Int(healthKitManager.basalCalories))")
                         .font(.title)
                         .padding()
-                    Text("Total Calories: \(Int(healthKitManager.basalCalories))+\(Int(healthKitManager.activeCalories))")
+                    Text("Total Calories: \(Int(healthKitManager.basalCalories)+Int(healthKitManager.activeCalories))")
                         .font(.title)
                         .padding()
                     
@@ -56,9 +56,16 @@ struct CalendarView: View {
                                 Text("Distance: \(workout.totalDistance?.doubleValue(for: .mile()) ?? 0, specifier: "%.2f") miles")
                                 if let heartRates = healthKitManager.heartRates[workout] {
                                     Text("Average Heart Rate: \(averageHeartRate(samples: heartRates)) bpm")
-                                    HeartRateRangeChart(isOverview: false, data: healthKitManager)
-                                        .frame(height: 360)
-                                        .background(Color.clear) // Set the chart's background to clear
+                                    Text("First 10 Heart Rates: \(heartRates.prefix(10).map { String(Int($0.quantity.doubleValue(for: heartRateUnit))) }.joined(separator: ", "))")
+
+                                    if let heartRateGroups = healthKitManager.heartRateGroups[workout] {
+                                        HeartRateRangeChart(isOverview: false, data: heartRateGroups, selectedWorkout: workout)
+                                            .onAppear {
+                                                healthKitManager.selectedWorkout = workout  // set selected workout
+                                            }
+                                            .frame(height: 360)
+                                            .background(Color.clear) // Set the chart's background to clear
+                                    }
                                 } else {
                                     EmptyView()
                                 }

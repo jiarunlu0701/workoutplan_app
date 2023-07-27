@@ -1,5 +1,6 @@
 import SwiftUI
 import Charts
+import HealthKit  // <-- Make sure this import is at the top of your file
 
 enum ChartStrideBy: Identifiable, CaseIterable {
     case second
@@ -58,8 +59,9 @@ enum ChartStrideBy: Identifiable, CaseIterable {
 
 struct HeartRateRangeChart: View {
     var isOverview: Bool
-    @ObservedObject var data: HealthKitManager  // Use HealthKitManager as observed object
-    
+    var data: [MinutelyHRSample]
+    var selectedWorkout: HKWorkout
+
     @State private var barWidth = 5.0
     @State private var chartColor: Color = .red
     
@@ -88,9 +90,9 @@ struct HeartRateRangeChart: View {
     }
 
     private var chart: some View {
-        let minValue = Double(data.heartRateGroups.map(\.minHR).min() ?? 0)
-        let maxValue = Double(data.heartRateGroups.map(\.maxHR).max() ?? 0)
-        return Chart(data.heartRateGroups, id: \.minute) { dataPoint in
+        let minValue = Double(data.map(\.minHR).min() ?? 0)
+        let maxValue = Double(data.map(\.maxHR).max() ?? 0)
+        return Chart(data, id: \.minute) { dataPoint in
             Plot {
                 BarMark(
                     x: .value("Minute", dataPoint.minute, unit: .minute),
@@ -123,11 +125,11 @@ struct HeartRateRangeChart: View {
     private var header: some View {
         VStack(alignment: .leading) {
             Text("Range")
-            Text("\(data.heartRateGroups.map(\.minHR).min() ?? 0)-\(data.heartRateGroups.map(\.maxHR).max() ?? 0) ")
+            Text("\(data.map(\.minHR).min() ?? 0)-\(data.map(\.maxHR).max() ?? 0) ")
                 .font(.system(.title, design: .rounded))
                 .foregroundColor(.primary)
             + Text("BPM")
-            Text("Workout from \(formatDate(data.heartRateGroups.first?.minute ?? Date()))")
+            Text("Workout from \(formatDate(data.first?.minute ?? Date()))")
         }
         .fontWeight(.semibold)
     }
@@ -136,12 +138,12 @@ struct HeartRateRangeChart: View {
 // MARK: - Accessibility
 extension HeartRateRangeChart: AXChartDescriptorRepresentable {
     func makeChartDescriptor() -> AXChartDescriptor {
-        let min = data.heartRateGroups.map(\.minHR).min() ?? 0
-        let max = data.heartRateGroups.map(\.maxHR).max() ?? 0
+        let min = data.map(\.minHR).min() ?? 0
+        let max = data.map(\.maxHR).max() ?? 0
 
         let xAxis = AXCategoricalDataAxisDescriptor(
             title: "Minute",
-            categoryOrder: data.heartRateGroups.map { formatDate($0.minute) }
+            categoryOrder: data.map { formatDate($0.minute) }
         )
 
         let yAxis = AXNumericDataAxisDescriptor(
@@ -153,7 +155,7 @@ extension HeartRateRangeChart: AXChartDescriptorRepresentable {
         let series = AXDataSeriesDescriptor(
             name: "Last Workout",
             isContinuous: false,
-            dataPoints: data.heartRateGroups.map {
+            dataPoints: data.map {
                 .init(x: formatDate($0.minute),
                       y: Double($0.avgHR),
                       label: "Min: \($0.minHR) BPM, Max: \($0.maxHR) BPM")
@@ -174,7 +176,11 @@ extension HeartRateRangeChart: AXChartDescriptorRepresentable {
 // MARK: - Preview
 struct HeartRateRangeChart_Previews: PreviewProvider {
     static var previews: some View {
-        HeartRateRangeChart(isOverview: true, data: HealthKitManager())
-        HeartRateRangeChart(isOverview: false, data: HealthKitManager())
+        // Mock the data
+        let mockWorkout = HKWorkout(activityType: .running, start: Date(), end: Date())
+        let mockData = [MinutelyHRSample(minute: Date(), minHR: 60, maxHR: 120, avgHR: 80)]
+
+        HeartRateRangeChart(isOverview: true, data: mockData, selectedWorkout: mockWorkout)
+        HeartRateRangeChart(isOverview: false, data: mockData, selectedWorkout: mockWorkout)
     }
 }
