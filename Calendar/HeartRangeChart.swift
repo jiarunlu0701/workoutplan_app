@@ -74,30 +74,21 @@ struct HeartRateRangeChart: View {
     }
 
     var body: some View {
-        Group {
-            if isOverview {
+        List {
+            Section(header: header) {
                 chart
-                    .background(Color.white) // Set chart background to white
-                    .overlay(loadingOverlay) // Add loading overlay
-            } else {
-                List {
-                    Section(header: header) {
-                        chart
-                            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                            .background(Color.white) // Set chart background to white
-                            .overlay(loadingOverlay) // Add loading overlay
-                    }
-                }
-                .listStyle(PlainListStyle()) // Use plain list style
-                .background(Color.white) // Set list background to white
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                    .background(Color.white)
             }
         }
-        .environment(\.colorScheme, .light) // enforce light mode
+        .environment(\.colorScheme, .light)
         .onAppear {
-            // Simulate loading with a slight delay (you can replace this with your actual loading logic)
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                 isHeartRateDataLoading = false
             }
+        }
+        .onDisappear {
+            isHeartRateDataLoading = true
         }
     }
 
