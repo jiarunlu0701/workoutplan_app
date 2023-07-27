@@ -120,6 +120,9 @@ class HealthKitManager: ObservableObject {
     @Published var heartRates: [HKWorkout: [HKQuantitySample]] = [:] // Corrected here
     @Published var heartRateGroups: [HKWorkout: [MinutelyHRSample]] = [:]  // Add this line
     @Published var selectedWorkout: HKWorkout? = nil  // add this line
+    @Published var sleepHours: Double = 0
+    @Published var inBedHours: Double = 0
+    @Published var isHeartRateDataLoading: Bool = false
 
     let heartRateUnit = HKUnit.count().unitDivided(by: HKUnit.minute())
     
@@ -132,9 +135,10 @@ class HealthKitManager: ObservableObject {
             HKObjectType.quantityType(forIdentifier: .activeEnergyBurned)!,
             HKObjectType.quantityType(forIdentifier: .basalEnergyBurned)!,
             HKObjectType.workoutType(),
-            HKObjectType.quantityType(forIdentifier: .heartRate)!
+            HKObjectType.quantityType(forIdentifier: .heartRate)!,
+            HKObjectType.categoryType(forIdentifier: .sleepAnalysis)! // New line
         ])
-
+        
         healthStore.requestAuthorization(toShare: [], read: typesToRead) { (success, error) in
             if success {
                 self.getactiveCaloriesBurned()
@@ -146,6 +150,66 @@ class HealthKitManager: ObservableObject {
         }
     }
     
+    func getInBedHours() {
+        let sleepType = HKObjectType.categoryType(forIdentifier: HKCategoryTypeIdentifier.sleepAnalysis)!
+        
+        let now = Date()
+        let startOfDay = Calendar.current.startOfDay(for: now)
+        let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: now, options: .strictStartDate)
+        
+        let query = HKSampleQuery(sampleType: sleepType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { (query, samples, error) in
+            guard let samples = samples as? [HKCategorySample], error == nil else {
+                print("Failed to fetch sleep samples.")
+                return
+            }
+            
+            let inBedSamples = samples.filter { $0.value == HKCategoryValueSleepAnalysis.inBed.rawValue }
+            let totalInBedTime = inBedSamples.reduce(0) { (accumulated, sample) in
+                let endTime = sample.endDate.timeIntervalSinceReferenceDate
+                let startTime = sample.startDate.timeIntervalSinceReferenceDate
+                return accumulated + (endTime - startTime)
+            }
+            let totalInBedHours = totalInBedTime / 3600  // convert from seconds to hours
+            
+            DispatchQueue.main.async {
+                self.inBedHours = totalInBedHours
+            }
+        }
+        
+        healthStore.execute(query)
+    }
+
+    func getSleepHours() {
+        let sleepType = HKObjectType.categoryType(forIdentifier: .sleepAnalysis)!
+        let now = Date()
+        let startOfDay = Calendar.current.startOfDay(for: now)
+
+        let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: now, options: .strictStartDate)
+
+        let query = HKSampleQuery(sampleType: sleepType, predicate: predicate, limit: Int(HKObjectQueryNoLimit), sortDescriptors: nil) { (query, samples, error) in
+            if let error = error {
+                print("Error occurred while querying for sleep data: \(error.localizedDescription)")
+                return
+            }
+            
+            if let sleepSamples = samples as? [HKCategorySample] {
+                var sleepTimeSeconds = 0.0
+                for sample in sleepSamples {
+                    if sample.value == HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue {
+                        let duration = sample.endDate.timeIntervalSince(sample.startDate)
+                        sleepTimeSeconds += duration
+                    }
+                }
+                
+                DispatchQueue.main.async {
+                    self.sleepHours = sleepTimeSeconds / 3600 // Convert seconds to hours
+                }
+            }
+        }
+
+        healthStore.execute(query)
+    }
+    
     func updateHeartRateGroupsFor(workout: HKWorkout) {
         if let heartRates = heartRates[workout] {
             let hrSamples = groupHeartRateSamplesByMinute(heartRates: heartRates)
@@ -155,22 +219,31 @@ class HealthKitManager: ObservableObject {
         }
     }
 
-    func getHeartRateData(for workout: HKWorkout, completion: @escaping ([HKQuantitySample]) -> Void) {
-        let heartRateType = HKQuantityType.quantityType(forIdentifier: .heartRate)!
-        let predicate = HKQuery.predicateForSamples(withStart: workout.startDate, end: workout.endDate, options: .strictStartDate)
-        let heartRateQuery = HKSampleQuery(sampleType: heartRateType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { (query, samples, error) in
-            guard let samples = samples as? [HKQuantitySample], error == nil else {
-                print("Failed to fetch heart rate samples for workout \(workout) with error: \(error?.localizedDescription ?? "Unknown error")")
-                return
+    func getHeartRateData(for workout: HKWorkout, dispatchGroup: DispatchGroup, completion: @escaping ([HKQuantitySample]) -> Void) {
+        dispatchGroup.enter()
+        
+        DispatchQueue.global(qos: .userInitiated).async {
+            let heartRateType = HKQuantityType.quantityType(forIdentifier: .heartRate)!
+            let predicate = HKQuery.predicateForSamples(withStart: workout.startDate, end: workout.endDate, options: .strictStartDate)
+            
+            let heartRateQuery = HKSampleQuery(sampleType: heartRateType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { (query, samples, error) in
+                guard let samples = samples as? [HKQuantitySample], error == nil else {
+                    print("Failed to fetch heart rate samples for workout \(workout) with error: \(error?.localizedDescription ?? "Unknown error")")
+                    return
+                }
+
+                let hrSamples = self.groupHeartRateSamplesByMinute(heartRates: samples)
+                
+                DispatchQueue.main.async {
+                    self.heartRateGroups[workout] = hrSamples.map { MinutelyHRSample(minute: $0.0, minHR: $0.1.min, maxHR: $0.1.max, avgHR: $0.1.avg) }
+                    dispatchGroup.leave()  // Indicate that this task has finished
+                }
+                completion(samples)
             }
-            // Group heart rate samples by minute and store the result
-            let hrSamples = self.groupHeartRateSamplesByMinute(heartRates: samples)
-            DispatchQueue.main.async {
-                self.heartRateGroups[workout] = hrSamples.map { MinutelyHRSample(minute: $0.0, minHR: $0.1.min, maxHR: $0.1.max, avgHR: $0.1.avg) }
-            }
-            completion(samples)
+            
+            self.isHeartRateDataLoading = true  // Indicate that loading has started
+            self.healthStore.execute(heartRateQuery)
         }
-        healthStore.execute(heartRateQuery)
     }
 
     func groupHeartRateSamplesByMinute(heartRates: [HKQuantitySample]) -> [(Date, (min: Int, max: Int, avg: Int))] {
@@ -178,7 +251,7 @@ class HealthKitManager: ObservableObject {
         var currentGroup: [Double] = []
         var currentMinute: Date? = nil
 
-        for (index, sample) in heartRates.enumerated() {
+        for (_, sample) in heartRates.enumerated() {
             let heartRate = sample.quantity.doubleValue(for: heartRateUnit)
             currentGroup.append(heartRate)
 
@@ -214,6 +287,7 @@ class HealthKitManager: ObservableObject {
         let startOfDay = calendar.date(byAdding: .day, value: -1, to: calendar.startOfDay(for: now)) // Get start of yesterday
         let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: now, options: .strictStartDate)
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
+        
         let query = HKSampleQuery(sampleType: .workoutType(), predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: [sortDescriptor]) { (query, samples, error) in
             guard let workouts = samples as? [HKWorkout], error == nil else {
                 print("Failed to fetch workouts.")
@@ -223,17 +297,22 @@ class HealthKitManager: ObservableObject {
             DispatchQueue.main.async {
                 self.workouts = workouts
                 
+                let dispatchGroup = DispatchGroup()  // Create a DispatchGroup
+                
                 // Fetch heart rate data for each workout
                 workouts.forEach { workout in
-                    self.getHeartRateData(for: workout) { heartRateSamples in
+                    self.getHeartRateData(for: workout, dispatchGroup: dispatchGroup) { heartRateSamples in
                         self.heartRates[workout] = heartRateSamples
                     }
+                }
+                
+                dispatchGroup.notify(queue: .main) {
+                    self.isHeartRateDataLoading = false  // Indicate that all heart rate data has finished loading
                 }
             }
         }
         healthStore.execute(query)
     }
-    
     func getBasalEnergyBurned() {
         let quantityType = HKQuantityType.quantityType(forIdentifier: .basalEnergyBurned)!
         

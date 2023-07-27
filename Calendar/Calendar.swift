@@ -41,7 +41,12 @@ struct CalendarView: View {
                     Text("Total Calories: \(Int(healthKitManager.basalCalories)+Int(healthKitManager.activeCalories))")
                         .font(.title)
                         .padding()
-                    
+                    Text("Sleep Hours: \(healthKitManager.sleepHours, specifier: "%.2f")")
+                        .font(.title)
+                        .padding()
+                    Text("Time in Bed: \(healthKitManager.inBedHours, specifier: "%.2f") hours")
+                        .font(.title)
+                        .padding()
                     // Display workouts
                     VStack(alignment: .leading) {
                         Text("Today's Workouts")
@@ -56,16 +61,16 @@ struct CalendarView: View {
                                 Text("Distance: \(workout.totalDistance?.doubleValue(for: .mile()) ?? 0, specifier: "%.2f") miles")
                                 if let heartRates = healthKitManager.heartRates[workout] {
                                     Text("Average Heart Rate: \(averageHeartRate(samples: heartRates)) bpm")
-                                    Text("First 10 Heart Rates: \(heartRates.prefix(10).map { String(Int($0.quantity.doubleValue(for: heartRateUnit))) }.joined(separator: ", "))")
-
-                                    if let heartRateGroups = healthKitManager.heartRateGroups[workout] {
-                                        HeartRateRangeChart(isOverview: false, data: heartRateGroups, selectedWorkout: workout)
-                                            .onAppear {
-                                                healthKitManager.selectedWorkout = workout  // set selected workout
-                                            }
-                                            .frame(height: 360)
-                                            .background(Color.clear) // Set the chart's background to clear
-                                    }
+                                    if healthKitManager.isHeartRateDataLoading {
+                                            ProgressView("Loading Heart Rate Data...")
+                                        } else if let heartRateGroups = healthKitManager.heartRateGroups[workout] {
+                                            HeartRateRangeChart(isOverview: false, data: heartRateGroups, selectedWorkout: workout)
+                                                .onAppear {
+                                                    healthKitManager.selectedWorkout = workout  // set selected workout
+                                                }
+                                                .frame(height: 360)
+                                                .background(Color.clear) // Set the chart's background to clear
+                                        }
                                 } else {
                                     EmptyView()
                                 }
@@ -85,46 +90,12 @@ struct CalendarView: View {
                 healthKitManager.getactiveCaloriesBurned()
                 healthKitManager.getBasalEnergyBurned()
                 healthKitManager.getTodayWorkouts()
+                healthKitManager.getSleepHours()  // Get sleep hours
+                healthKitManager.getInBedHours()  // Get in-bed hours
             }
         }
     }
-    
-    func groupHeartRateSamplesByMinute(heartRates: [HKQuantitySample]) -> [(Double, (min: Int, max: Int, avg: Int))] {
-        var groups: [(Double, (min: Int, max: Int, avg: Int))] = []
-        var currentGroup: [Double] = []
-        var currentMinute: Date? = nil
 
-        for (_, sample) in heartRates.enumerated() {
-            let heartRate = sample.quantity.doubleValue(for: heartRateUnit)
-            currentGroup.append(heartRate)
-
-            // Use the first sample's date as the minute indicator
-            if currentMinute == nil {
-                currentMinute = sample.startDate
-            }
-
-            if currentGroup.count == 4 { // Group every 4 samples (every minute)
-                let minHeartRate = Int(currentGroup.min()!)
-                let maxHeartRate = Int(currentGroup.max()!)
-                let avgHeartRate = Int(currentGroup.reduce(0, +) / Double(currentGroup.count))
-                let minutes = currentMinute!.timeIntervalSince1970 / 60
-                groups.append((minutes, (min: minHeartRate, max: maxHeartRate, avg: avgHeartRate)))
-                currentGroup.removeAll() // Clear for the next group
-                currentMinute = nil // Reset the minute
-            }
-        }
-
-        // Handle last group if it has less than 4 samples
-        if !currentGroup.isEmpty {
-            let minHeartRate = Int(currentGroup.min()!)
-            let maxHeartRate = Int(currentGroup.max()!)
-            let avgHeartRate = Int(currentGroup.reduce(0, +) / Double(currentGroup.count))
-            let minutes = currentMinute!.timeIntervalSince1970 / 60
-            groups.append((minutes, (min: minHeartRate, max: maxHeartRate, avg: avgHeartRate)))
-        }
-
-        return groups
-    }
     
     func averageHeartRate(samples: [HKQuantitySample]) -> Double {
         let heartRateUnit = HKUnit.count().unitDivided(by: HKUnit.minute())
@@ -134,13 +105,7 @@ struct CalendarView: View {
         }
         return totalHeartRate / Double(samples.count)
     }
-
-    func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
-    }
+    
 }
 
 struct FitnessRingView: View {

@@ -17,8 +17,9 @@ class Ring: Identifiable, ObservableObject {
     var iconColor: Color
     @Published var userInput: CGFloat
     @Published var minValue: CGFloat
+    var lastUpdatedDate: Date?  // New property
 
-    init(progress: CGFloat, value: String, keyIcon: ImageIdentifier, keyColor: Color, iconColor: Color, userInput: CGFloat = 0, minValue: CGFloat = 0) {
+    init(progress: CGFloat, value: String, keyIcon: ImageIdentifier, keyColor: Color, iconColor: Color, userInput: CGFloat = 0, minValue: CGFloat = 0, lastUpdatedDate: Date? = nil) {
         self.progress = progress
         self.value = value
         self.keyIcon = keyIcon
@@ -26,8 +27,10 @@ class Ring: Identifiable, ObservableObject {
         self.iconColor = iconColor
         self.userInput = userInput
         self.minValue = minValue
+        self.lastUpdatedDate = lastUpdatedDate  // Now it's valid
     }
 }
+
 
 class RingViewModel: ObservableObject {
     @ObservedObject private var dietManager = DietManager()
@@ -110,10 +113,20 @@ class RingViewModel: ObservableObject {
         guard let userId = UserAuth.getCurrentUserId() else {
             return
         }
-
-        db.collection("rings").document(userId).collection("userInput").document(ring.id).setData([
+        
+        // Create a date formatter
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        
+        // Convert current date to string
+        let dateString = dateFormatter.string(from: Date())
+        
+        // Create a document for each date
+        db.collection("rings").document(userId).collection("userInput").document(dateString).setData([
+            "ringId": ring.id,  // Store ringId in the data
             "value": ring.value,
             "userInput": ring.userInput,
+            "lastUpdatedDate": Date()
         ]) { error in
             if let error = error {
                 print("Error adding document: \(error)")
@@ -122,6 +135,7 @@ class RingViewModel: ObservableObject {
             }
         }
     }
+
 
     func fetchUserInputsFromFirestore() {
         let db = Firestore.firestore()
@@ -136,22 +150,37 @@ class RingViewModel: ObservableObject {
             } else {
                 self.fetchedUserInputs = querySnapshot?.documents.compactMap { document in
                     let data = document.data()
-                    guard let value = data["value"] as? String, let userInput = data["userInput"] as? CGFloat else { return nil }
-                    return Ring(progress: 0, value: value, keyIcon: .system(name: "circle"), keyColor: .white, iconColor: .white, userInput: userInput, minValue: 0)
+                    if let value = data["value"] as? String,
+                       let userInput = data["userInput"] as? CGFloat,
+                       let lastUpdatedTimestamp = data["lastUpdatedDate"] as? Timestamp {
+                        let lastUpdatedDate = lastUpdatedTimestamp.dateValue() // Convert Timestamp to Date
+                        return Ring(progress: 0, value: value, keyIcon: .system(name: "circle"), keyColor: .white, iconColor: .white, userInput: userInput, minValue: 0, lastUpdatedDate: lastUpdatedDate)
+                    } else {
+                        return nil // This line is now valid
+                    }
                 } ?? []
+                self.updateRingsWithFetchedUserInputs()
+                self.isDataLoaded = true
             }
-            self.updateRingsWithFetchedUserInputs()
-            self.isDataLoaded = true
         }
     }
 
     
     func updateRingsWithFetchedUserInputs() {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+
         for fetchedRing in fetchedUserInputs {
             if let index = rings.firstIndex(where: { $0.value == fetchedRing.value }) {
-                rings[index].userInput = fetchedRing.userInput
-                let percentage = (CGFloat(rings[index].userInput) / rings[index].minValue) * 100
-                rings[index].progress = rings[index].minValue != 0 ? percentage : 0
+                if let lastUpdatedDate = fetchedRing.lastUpdatedDate, calendar.startOfDay(for: lastUpdatedDate) == today {
+                    rings[index].userInput = fetchedRing.userInput
+                    let percentage = (CGFloat(rings[index].userInput) / rings[index].minValue) * 100
+                    rings[index].progress = rings[index].minValue != 0 ? percentage : 0
+                } else {
+                    rings[index].userInput = 0
+                    rings[index].progress = 0
+                }
+                rings[index].lastUpdatedDate = fetchedRing.lastUpdatedDate
             }
         }
     }
