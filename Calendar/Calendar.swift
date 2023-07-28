@@ -84,14 +84,16 @@ struct CalendarView: View {
                 }
             }
             .onAppear {
-                if let userId = UserAuth.getCurrentUserId() {
-                    appState.workoutManager.fetchWorkoutPhasesForUser(userId: userId)
+                DispatchQueue.global(qos: .background).async {
+                    if let userId = UserAuth.getCurrentUserId() {
+                        appState.workoutManager.fetchWorkoutPhasesForUser(userId: userId)
+                    }
+                    healthKitManager.getactiveCaloriesBurned()
+                    healthKitManager.getBasalEnergyBurned()
+                    healthKitManager.getTodayWorkouts()
+                    healthKitManager.getSleepHours()  // Get sleep hours
+                    healthKitManager.getInBedHours()  // Get in-bed hours
                 }
-                healthKitManager.getactiveCaloriesBurned()
-                healthKitManager.getBasalEnergyBurned()
-                healthKitManager.getTodayWorkouts()
-                healthKitManager.getSleepHours()  // Get sleep hours
-                healthKitManager.getInBedHours()  // Get in-bed hours
             }
         }
     }
