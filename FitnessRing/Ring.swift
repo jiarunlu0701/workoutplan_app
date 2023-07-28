@@ -109,21 +109,23 @@ class RingViewModel: ObservableObject {
 
     func storeUserInputInFirestore(ring: Ring) {
         let db = Firestore.firestore()
-        
+
         guard let userId = UserAuth.getCurrentUserId() else {
             return
         }
-        
+
         // Create a date formatter
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
-        
+
         // Convert current date to string
         let dateString = dateFormatter.string(from: Date())
-        
-        // Create a document for each date
-        db.collection("rings").document(userId).collection("userInput").document(dateString).setData([
-            "ringId": ring.id,  // Store ringId in the data
+
+        // Create a document for each date and each ring value
+        // Replace any special characters and whitespace in the ring value
+        let sanitizedRingValue = ring.value.replacingOccurrences(of: "[^0-9a-zA-Z]", with: "_", options: .regularExpression)
+        db.collection("rings").document(userId).collection("userInput").document("\(dateString)_\(sanitizedRingValue)").setData([
+            "ringId": ring.id,
             "value": ring.value,
             "userInput": ring.userInput,
             "lastUpdatedDate": Date()
@@ -135,8 +137,7 @@ class RingViewModel: ObservableObject {
             }
         }
     }
-
-
+    
     func fetchUserInputsFromFirestore() {
         let db = Firestore.firestore()
 
@@ -144,7 +145,12 @@ class RingViewModel: ObservableObject {
             return
         }
 
-        db.collection("rings").document(userId).collection("userInput").getDocuments { (querySnapshot, error) in
+        let calendar = Calendar.current
+        // Get the start of the current day
+        let startOfDay = calendar.startOfDay(for: Date())
+        let startOfDayTimestamp = Timestamp(date: startOfDay)
+
+        db.collection("rings").document(userId).collection("userInput").whereField("lastUpdatedDate", isGreaterThanOrEqualTo: startOfDayTimestamp).getDocuments { (querySnapshot, error) in
             if let error = error {
                 print("Error getting documents: \(error)")
             } else {
@@ -165,7 +171,6 @@ class RingViewModel: ObservableObject {
         }
     }
 
-    
     func updateRingsWithFetchedUserInputs() {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
