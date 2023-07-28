@@ -88,36 +88,62 @@ struct Home: View {
 struct DateScrollBar: View {
     @Binding var selectedDate: Date
     @ObservedObject var workoutManager: WorkoutManager
-    
+    @State private var scrollToIndex: Int?
+
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 15) {
-                let range = (Calendar.current.dateComponents([.day], from: workoutManager.earliestPhaseStartDate, to: workoutManager.latestPhaseEndDate).day ?? 0) + 1
-                ForEach(Array(0..<range), id: \.self) { i in
-                    let date = Calendar.current.date(byAdding: .day, value: i, to: workoutManager.earliestPhaseStartDate)!
-                    VStack(alignment: .center) {
-                        Text("\(getWeekdayString(date: date))")
-                            .font(.subheadline)
-                        Text("\(getDateString(date: date, format: "MMM d"))")
-                            .fontWeight(date == selectedDate ? .bold : .none)
-                    }
-                        .fontWeight(date == selectedDate ? .bold : .none)
-                        .padding(.vertical, 10)
-                        .padding(.horizontal)
-                        .background(date == selectedDate ? Color.gray.opacity(0.1) : Color.clear)
-                        .cornerRadius(25)
-                        .onTapGesture {
-                            withAnimation {
-                                selectedDate = date
-                            }
+            ScrollViewReader { scrollViewProxy in
+                HStack(spacing: 15) {
+                    let range = (Calendar.current.dateComponents([.day], from: workoutManager.earliestPhaseStartDate, to: workoutManager.latestPhaseEndDate).day ?? 0) + 1
+                    ForEach(Array(0..<range), id: \.self) { i in
+                        let date = Calendar.current.date(byAdding: .day, value: i, to: workoutManager.earliestPhaseStartDate)!
+                        VStack(alignment: .center) {
+                            Text("\(getWeekdayString(date: date))")
+                                .font(.subheadline)
+                            Text("\(getDateString(date: date, format: "MMM d"))")
+                                .fontWeight(date == selectedDate ? .bold : .none)
                         }
+                            .fontWeight(date == selectedDate ? .bold : .none)
+                            .padding(.vertical, 10)
+                            .padding(.horizontal)
+                            .background(date == selectedDate ? Color.gray.opacity(0.1) : Color.clear)
+                            .cornerRadius(25)
+                            .onTapGesture {
+                                withAnimation {
+                                    selectedDate = date
+                                }
+                            }
+                            .id(i) // Give each date an id
+                    }
+                }
+                .padding(.horizontal)
+                .onAppear {
+                    if let scrollTo = scrollToIndex {
+                        withAnimation {
+                            scrollViewProxy.scrollTo(scrollTo, anchor: .center)
+                        }
+                    }
+                }
+                .onChange(of: workoutManager.earliestPhaseStartDate) { _ in
+                    calculateScrollToIndex()
+                    if let scrollTo = scrollToIndex {
+                        withAnimation {
+                            scrollViewProxy.scrollTo(scrollTo, anchor: .center)
+                        }
+                    }
                 }
             }
-            .padding(.horizontal)
         }
         .padding(.top)
+        .onAppear {
+            calculateScrollToIndex()
+        }
     }
 
+    func calculateScrollToIndex() {
+        let range = (Calendar.current.dateComponents([.day], from: workoutManager.earliestPhaseStartDate, to: Date()).day ?? 0) + 1
+        scrollToIndex = range - 1
+    }
     
     func getDateString(date: Date, format: String) -> String {
         let dateFormatter = DateFormatter()
