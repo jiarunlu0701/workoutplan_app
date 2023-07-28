@@ -66,7 +66,10 @@ struct CalendarView: View {
                                     Button(action: {
                                         shouldDisplayGraph.toggle()
                                     }) {
-                                        Text(shouldDisplayGraph ? "Hide Heart Rate Chart" : "Show Heart Rate Chart")
+                                        HStack {
+                                            Image(systemName: shouldDisplayGraph ? "minus.circle" : "heart.text.square")
+                                            Text(shouldDisplayGraph ? "Hide Heart Rate Chart" : "Show Heart Rate Chart")
+                                        }
                                     }.padding()
                                     
                                     if healthKitManager.isHeartRateDataLoading {
