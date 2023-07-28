@@ -20,6 +20,7 @@ struct CalendarView: View {
     @StateObject private var appState = AppState()
     @StateObject private var healthKitManager = HealthKitManager()
     @State private var selectedDate: Date = Calendar.current.startOfDay(for: Date())
+    @State private var shouldDisplayGraph = false
     let heartRateUnit = HKUnit.count().unitDivided(by: HKUnit.minute())
     var heartRateSamples: [HKQuantitySample]  // Add this property
 
@@ -56,20 +57,27 @@ struct CalendarView: View {
                             VStack(alignment: .leading) {
                                 Text(workout.workoutActivityType.name)
                                     .font(.headline)
-                                Text("Duration: \(workout.duration / 60, specifier: "%.2f") minutes") // Convert duration to minutes
+                                Text("Duration: \(workout.duration / 60, specifier: "%.2f") minutes")
                                 Text("Calories Burned: \(workout.totalEnergyBurned?.doubleValue(for: .kilocalorie()) ?? 0, specifier: "%.2f")")
                                 Text("Distance: \(workout.totalDistance?.doubleValue(for: .mile()) ?? 0, specifier: "%.2f") miles")
                                 if let heartRates = healthKitManager.heartRates[workout] {
                                     Text("Average Heart Rate: \(averageHeartRate(samples: heartRates)) bpm")
+                                    
+                                    Button(action: {
+                                        shouldDisplayGraph.toggle()
+                                    }) {
+                                        Text(shouldDisplayGraph ? "Hide Heart Rate Chart" : "Show Heart Rate Chart")
+                                    }.padding()
+                                    
                                     if healthKitManager.isHeartRateDataLoading {
                                         ProgressView("Loading Heart Rate Data...")
-                                    } else if let heartRateGroups = healthKitManager.heartRateGroups[workout], !heartRateGroups.isEmpty {
+                                    } else if let heartRateGroups = healthKitManager.heartRateGroups[workout], shouldDisplayGraph {
                                         HeartRateRangeChart(isOverview: false, data: heartRateGroups, selectedWorkout: workout)
                                             .onAppear {
-                                                healthKitManager.selectedWorkout = workout  // set selected workout
+                                                healthKitManager.selectedWorkout = workout
                                             }
                                             .frame(height: 360)
-                                            .background(Color.clear) // Set the chart's background to clear
+                                            .background(Color.clear)
                                     }
                                 } else {
                                     EmptyView()

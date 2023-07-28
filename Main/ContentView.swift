@@ -46,7 +46,7 @@ struct MainView: View {
     @State private var lastSelectedTab: Int = 0
     @State private var previousTab: Int = 0
     @State private var showingCoachChat = false
-    @StateObject private var ringViewModel = RingViewModel() // If you initialize it like this
+    @StateObject private var ringViewModel = RingViewModel()
     @StateObject private var healthKitManager = HealthKitManager()
 
     var body: some View {
@@ -60,8 +60,8 @@ struct MainView: View {
                     }.tag(0)
                 
                 CalendarView(heartRateSamples: healthKitManager.heartRates.values.flatMap { $0 })
-                    .environmentObject(ringViewModel) // passing ringViewModel here
-                    .environmentObject(healthKitManager) // passing healthKitManager here
+                    .environmentObject(ringViewModel)
+                    .environmentObject(healthKitManager)
                     .tabItem {
                         Image(systemName: "calendar")
                         Text("Calendar")
