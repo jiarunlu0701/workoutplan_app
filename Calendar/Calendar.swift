@@ -91,8 +91,8 @@ struct CalendarView: View {
                     healthKitManager.getactiveCaloriesBurned()
                     healthKitManager.getBasalEnergyBurned()
                     healthKitManager.getTodayWorkouts()
-                    healthKitManager.getSleepHours()  // Get sleep hours
-                    healthKitManager.getInBedHours()  // Get in-bed hours
+                    healthKitManager.getSleepHours()
+                    healthKitManager.getInBedHours()
                 }
             }
         }

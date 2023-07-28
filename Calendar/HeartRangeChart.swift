@@ -94,7 +94,6 @@ struct HeartRateRangeChart: View {
 
     @ViewBuilder
     private var chart: some View {
-        // Display a ProgressView while loading the chart data
         if isHeartRateDataLoading {
             ProgressView("Loading Heart Rate Data...")
                 .frame(height: isOverview ? 500 : 200) // Set the frame to match the chart height
@@ -128,7 +127,7 @@ struct HeartRateRangeChart: View {
             .chartYScale(domain: [Double(minValue), Double(maxValue)])
             .chartXAxis(isOverview ? .hidden : .automatic)
             .frame(height: isOverview ? 500 : 200)
-            .background(Color.white)  // Set the background color here
+            .background(Color.white)
         }
     }
     
@@ -154,7 +153,6 @@ struct HeartRateRangeChart: View {
     }
 }
 
-// MARK: - Accessibility
 extension HeartRateRangeChart: AXChartDescriptorRepresentable {
     func makeChartDescriptor() -> AXChartDescriptor {
         let min = data.map(\.minHR).min() ?? 0
