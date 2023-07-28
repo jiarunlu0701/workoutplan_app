@@ -39,6 +39,19 @@ extension Encodable {
 
 class WorkoutManager: ObservableObject {
     @Published var workoutPhases: [WorkoutPhase] = []
+    @Published var workoutProgress: Float = 0.0
+    var earliestPhaseStartDate: Date {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        return workoutPhases.compactMap { dateFormatter.date(from: $0.start_date) }.min() ?? Date()
+    }
+
+    var latestPhaseEndDate: Date {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        return workoutPhases.compactMap { dateFormatter.date(from: $0.end_date) }.max() ?? Date()
+    }
+
     let db = Firestore.firestore()
     
     func saveWorkoutPlanForUser(userId: String) {
@@ -85,8 +98,20 @@ class WorkoutManager: ObservableObject {
                         return nil
                     }
                 }
+                
+                DispatchQueue.main.async {
+                    let startDate = self.earliestPhaseStartDate
+                    let endDate = self.latestPhaseEndDate
+                    self.workoutProgress = self.calculateWorkoutProgress(startDate: startDate, endDate: endDate, currentDate: Date())
+                }
             }
         }
+    }
+    
+    func calculateWorkoutProgress(startDate: Date, endDate: Date, currentDate: Date) -> Float {
+        let totalTimeInterval = endDate.timeIntervalSince(startDate)
+        let elapsedTimeInterval = currentDate.timeIntervalSince(startDate)
+        return Float(elapsedTimeInterval / totalTimeInterval)
     }
     
     func exercisesForDay(date: Date) -> [Exercise] {
@@ -147,17 +172,5 @@ class WorkoutManager: ObservableObject {
                 print("Error decoding workout phases: \(error)")
             }
         }
-    }
-
-    var earliestPhaseStartDate: Date {
-           let dateFormatter = DateFormatter()
-           dateFormatter.dateFormat = "yyyy-MM-dd"
-           return workoutPhases.compactMap { dateFormatter.date(from: $0.start_date) }.min() ?? Date()
-       }
-
-    var latestPhaseEndDate: Date {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-        return workoutPhases.compactMap { dateFormatter.date(from: $0.end_date) }.max() ?? Date()
     }
 }

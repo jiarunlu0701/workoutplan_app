@@ -3,13 +3,15 @@ import SwiftUI
 struct Home: View {
     @EnvironmentObject var userAuth: UserAuth
     @StateObject private var dietManager = DietManager()
+    @StateObject private var workoutManager = WorkoutManager()
     @State private var isFlipped = false
     @State private var isShowingLoginView = false
     @StateObject private var ringViewModel = RingViewModel()
     @StateObject private var appState = AppState()
     @State private var selectedDate: Date = Calendar.current.startOfDay(for: Date())
     @State private var selectedSegment = "Workouts"
-    
+    @State private var workoutProgress: Float = 0.0
+
     var body: some View {
         ZStack {
             BackgroundView()
@@ -32,6 +34,21 @@ struct Home: View {
                     }
                     .flipEffect(isFlipped: $isFlipped, angle: Angle(degrees: isFlipped ? 180 : 0))
                     
+                    ZStack(alignment: .leading) {
+                        GeometryReader { geometryReader in
+                            Rectangle()
+                                .frame(width: geometryReader.size.width * CGFloat(workoutProgress))
+                                .foregroundColor(.green)
+                                .animation(.linear, value: workoutProgress)
+                            Text("\(Int(workoutProgress * 100))% In Progress")
+                                .frame(width: geometryReader.size.width, height: geometryReader.size.height, alignment: .center)
+                        }
+                    }
+                    .frame(height: 20)
+                    .background(Color.gray.opacity(0.3))
+                    .cornerRadius(10)
+                    .padding()
+
                     DateScrollBar(selectedDate: $selectedDate, workoutManager: appState.workoutManager)
                         .padding(.horizontal)
                         .padding(.top, 10)
@@ -49,7 +66,6 @@ struct Home: View {
                         DietPlanContent(date: selectedDate)
                             .environmentObject(dietManager) // pass DietManager as an environment object
                     }
-                    
                 }
                 .onAppear {
                     if let userId = UserAuth.getCurrentUserId() {
@@ -57,7 +73,13 @@ struct Home: View {
                         dietManager.fetchDietPlansForUser(userId: userId) // fetch diet plans
                     }
                 }
-                .padding(.horizontal)
+                .onChange(of: appState.workoutManager.earliestPhaseStartDate, perform: { value in
+                    workoutProgress = appState.workoutManager.calculateWorkoutProgress(startDate: appState.workoutManager.earliestPhaseStartDate, endDate: appState.workoutManager.latestPhaseEndDate, currentDate: Date())
+                })
+                .onChange(of: appState.workoutManager.latestPhaseEndDate, perform: { value in
+                    workoutProgress = appState.workoutManager.calculateWorkoutProgress(startDate: appState.workoutManager.earliestPhaseStartDate, endDate: appState.workoutManager.latestPhaseEndDate, currentDate: Date())
+                })
+                 .padding(.horizontal)
             }
         }
     }

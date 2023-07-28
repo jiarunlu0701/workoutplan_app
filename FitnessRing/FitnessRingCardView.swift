@@ -3,6 +3,7 @@ import SwiftUI
 struct FitnessRingCardView: View {
     @EnvironmentObject var ringViewModel: RingViewModel
     @Binding var isFlip: Bool
+
     var body: some View {
         if !ringViewModel.isDataLoaded {
             ProgressView("Loading...")
