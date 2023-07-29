@@ -63,8 +63,8 @@ struct MainView: View {
                     .environmentObject(ringViewModel)
                     .environmentObject(healthKitManager)
                     .tabItem {
-                        Image(systemName: "calendar")
-                        Text("Calendar")
+                        Image(systemName: "chart.xyaxis.line")
+                        Text("Status")
                     }
                     .tag(2)
 

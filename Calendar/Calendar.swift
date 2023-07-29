@@ -30,8 +30,9 @@ struct CalendarView: View {
             ScrollView {
                 VStack{
                     DateScrollBar(selectedDate: $selectedDate, workoutManager: appState.workoutManager)
-                    FitnessRingView()
-                        .environmentObject(ringViewModel)
+                        .onChange(of: selectedDate) { newDate in
+                            healthKitManager.getInBedHours(for: newDate)
+                        }
                     // Display the calories
                     Text("Active Calories: \(Int(healthKitManager.activeCalories))")
                         .font(.title)
@@ -103,8 +104,11 @@ struct CalendarView: View {
                     healthKitManager.getBasalEnergyBurned()
                     healthKitManager.getTodayWorkouts()
                     healthKitManager.getSleepHours()
-                    healthKitManager.getInBedHours()
+                    healthKitManager.getInBedHours(for: Date())  // Add this line
                 }
+            }
+            .onChange(of: selectedDate) { newDate in
+                healthKitManager.getInBedHours(for: newDate)
             }
         }
     }
@@ -119,70 +123,4 @@ struct CalendarView: View {
         return totalHeartRate / Double(samples.count)
     }
     
-}
-
-struct FitnessRingView: View {
-    @EnvironmentObject var ringViewModel: RingViewModel
-    var body: some View {
-        if !ringViewModel.isDataLoaded {
-            ProgressView("Loading...")
-        } else {
-            VStack(spacing: 15){
-                HStack(spacing: 20){
-                    ZStack{
-                        ForEach(ringViewModel.rings.indices, id: \.self){ index in
-                            AnimatedRingView(ring: ringViewModel.rings[index], index: index)
-                        }
-                    }
-                    .frame(width: 130, height: 130)
-                    VStack(alignment: .leading, spacing: 12) {
-                        ForEach(ringViewModel.rings.indices, id: \.self){ index in
-                            Label {
-                                Spacer()
-                                HStack(alignment: .bottom, spacing: 6) {
-                                    Text("\(Int(ringViewModel.rings[index].userInput)) / \(Int(ringViewModel.rings[index].minValue))")
-                                        .font(.title3.bold())
-                                }
-                            } icon: {
-                                Group {
-                                    switch ringViewModel.rings[index].keyIcon {
-                                    case .system(let name):
-                                        Image(systemName: name)
-                                            .resizable()
-                                            .scaledToFit()
-                                            .frame(width: 25, height: 25)
-                                            .foregroundColor(ringViewModel.rings[index].iconColor)
-                                    case .local(let name):
-                                        Image(name)
-                                            .resizable()
-                                            .scaledToFit()
-                                            .frame(width: 25, height: 25)
-                                            .foregroundColor(ringViewModel.rings[index].iconColor)
-                                    }
-                                }
-                                .frame(width: 30)
-                                let ring = ringViewModel.rings[index]
-                                Text(ring.value)
-                                    .font(.caption)
-                            }
-                        }
-                    }
-                    .padding(.leading,10)
-                }
-                .padding(.top,20)
-            }
-            .padding(.horizontal,20)
-            .padding(.vertical,25)
-            .background(Color.clear)
-            .onAppear {
-                ringViewModel.loadData()
-            }
-            .onChange(of: ringViewModel.needsRefresh) { needsRefresh in
-                if needsRefresh {
-                    ringViewModel.loadData()
-                    ringViewModel.needsRefresh = false
-                }
-            }
-        }
-    }
 }
