@@ -141,9 +141,9 @@ class HealthKitManager: ObservableObject {
         
         healthStore.requestAuthorization(toShare: [], read: typesToRead) { (success, error) in
             if success {
-                self.getactiveCaloriesBurned()
-                self.getBasalEnergyBurned()
-                self.getTodayWorkouts()
+                self.getactiveCaloriesBurned(for: Date())
+                self.getBasalEnergyBurned(for: Date())
+                self.getTodayWorkouts(for: Date())
             } else if let error = error {
                 print(error.localizedDescription)
             }
@@ -178,12 +178,11 @@ class HealthKitManager: ObservableObject {
         healthStore.execute(query)
     }
 
-    func getSleepHours() {
+    func getSleepHours(for date: Date) {
         let sleepType = HKObjectType.categoryType(forIdentifier: .sleepAnalysis)!
-        let now = Date()
-        let startOfDay = Calendar.current.startOfDay(for: now)
-
-        let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: now, options: .strictStartDate)
+        let startOfDay = Calendar.current.startOfDay(for: date)
+        let endOfDay = Calendar.current.date(byAdding: .day, value: 1, to: startOfDay)!
+        let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: endOfDay, options: .strictStartDate)
 
         let query = HKSampleQuery(sampleType: sleepType, predicate: predicate, limit: Int(HKObjectQueryNoLimit), sortDescriptors: nil) { (query, samples, error) in
             if let error = error {
@@ -280,11 +279,10 @@ class HealthKitManager: ObservableObject {
         return groups
     }
 
-    func getTodayWorkouts() {
-        let calendar = Calendar.current
-        let now = Date()
-        let startOfDay = calendar.date(byAdding: .day, value: -2, to: calendar.startOfDay(for: now)) // Get start of yesterday
-        let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: now, options: .strictStartDate)
+    func getTodayWorkouts(for date: Date) {
+        let startOfDay = Calendar.current.startOfDay(for: date)
+        let endOfDay = Calendar.current.date(byAdding: .day, value: 1, to: startOfDay)!
+        let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: endOfDay, options: .strictStartDate)
         let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
         
         let query = HKSampleQuery(sampleType: .workoutType(), predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: [sortDescriptor]) { (query, samples, error) in
@@ -312,12 +310,14 @@ class HealthKitManager: ObservableObject {
         }
         healthStore.execute(query)
     }
-    func getBasalEnergyBurned() {
+    
+    func getBasalEnergyBurned(for date: Date) {
+        self.basalCalories = 0  // Add this line
+
         let quantityType = HKQuantityType.quantityType(forIdentifier: .basalEnergyBurned)!
-        
-        let now = Date()
-        let startOfDay = Calendar.current.startOfDay(for: now)
-        let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: now, options: .strictStartDate)
+        let startOfDay = Calendar.current.startOfDay(for: date)
+        let endOfDay = Calendar.current.date(byAdding: .day, value: 1, to: startOfDay)!
+        let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: endOfDay, options: .strictStartDate)
         
         let query = HKStatisticsQuery(quantityType: quantityType, quantitySamplePredicate: predicate, options: .cumulativeSum) { _, result, error in
             if let error = error {
@@ -333,13 +333,13 @@ class HealthKitManager: ObservableObject {
         healthStore.execute(query)
     }
 
-    func getactiveCaloriesBurned() {
+    func getactiveCaloriesBurned(for date: Date) {
+        self.activeCalories = 0  // Add this line
+
         let quantityType = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!
-
-        let now = Date()
-        let startOfDay = Calendar.current.startOfDay(for: now)
-        let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: now, options: .strictStartDate)
-
+        let startOfDay = Calendar.current.startOfDay(for: date)
+        let endOfDay = Calendar.current.date(byAdding: .day, value: 1, to: startOfDay)!
+        let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: endOfDay, options: .strictStartDate)
         let query = HKStatisticsQuery(quantityType: quantityType, quantitySamplePredicate: predicate, options: .cumulativeSum) { _, result, error in
             if let error = error {
                 print(error.localizedDescription)
@@ -353,4 +353,5 @@ class HealthKitManager: ObservableObject {
 
         healthStore.execute(query)
     }
+
 }

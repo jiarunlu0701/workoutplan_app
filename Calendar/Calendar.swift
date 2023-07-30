@@ -32,6 +32,11 @@ struct CalendarView: View {
                     DateScrollBar(selectedDate: $selectedDate, workoutManager: appState.workoutManager)
                         .onChange(of: selectedDate) { newDate in
                             healthKitManager.getInBedHours(for: newDate)
+                            healthKitManager.getactiveCaloriesBurned(for: newDate)
+                            healthKitManager.getBasalEnergyBurned(for: newDate)
+                            healthKitManager.getTodayWorkouts(for: newDate)
+                            healthKitManager.getSleepHours(for: newDate)
+                            shouldDisplayGraph = false  // Reset shouldDisplayGraph to false
                         }
                     // Display the calories
                     Text("Active Calories: \(Int(healthKitManager.activeCalories))")
@@ -100,15 +105,12 @@ struct CalendarView: View {
                     if let userId = UserAuth.getCurrentUserId() {
                         appState.workoutManager.fetchWorkoutPhasesForUser(userId: userId)
                     }
-                    healthKitManager.getactiveCaloriesBurned()
-                    healthKitManager.getBasalEnergyBurned()
-                    healthKitManager.getTodayWorkouts()
-                    healthKitManager.getSleepHours()
+                    healthKitManager.getactiveCaloriesBurned(for: Date())
+                    healthKitManager.getBasalEnergyBurned(for: Date())
+                    healthKitManager.getTodayWorkouts(for: Date())
+                    healthKitManager.getSleepHours(for: Date())
                     healthKitManager.getInBedHours(for: Date())  // Add this line
                 }
-            }
-            .onChange(of: selectedDate) { newDate in
-                healthKitManager.getInBedHours(for: newDate)
             }
         }
     }
