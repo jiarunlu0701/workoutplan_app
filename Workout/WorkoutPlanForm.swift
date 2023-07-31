@@ -124,7 +124,6 @@ struct WorkoutPlanForm: View {
         } else {
             print("Error: Could not get the current user ID.")
         }
-        appState.generateWorkoutPlan(userMessage: planDetails)
         self.presentationMode.wrappedValue.dismiss()
     }
     

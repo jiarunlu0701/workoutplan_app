@@ -64,7 +64,7 @@ struct Home: View {
                         ExerciseContent(date: selectedDate, workoutManager: appState.workoutManager)
                     } else if selectedSegment == "Diet Plan" {
                         DietPlanContent(date: selectedDate)
-                            .environmentObject(dietManager) // pass DietManager as an environment object
+                            .environmentObject(dietManager)
                     }
                 }
                 .onAppear {

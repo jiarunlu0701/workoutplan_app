@@ -8,15 +8,13 @@ extension View {
 
 struct CoachChatView: View {
     @ObservedObject var appState: AppState
-    private let openAIService = OpenAIService()
     @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject var userSession: UserSession
     @Binding var selectedTab: Int
     @Binding var previousTab: Int
     private let bottomPaddingID = "BottomPaddingID"
     @State private var isScrolling = false
-    @State private var showFormIcon: Bool = false
-
+    
     var body: some View {
         NavigationView {
             ZStack {
@@ -33,17 +31,9 @@ struct CoachChatView: View {
                                 .foregroundColor(.gray)
                         }
                         Spacer()
-                        Button(action: {
-                            self.resetAppState()
-                        }) {
-                            Image(systemName: "arrow.clockwise")
-                                .resizable()
-                                .frame(width: 25, height: 25)
-                                .foregroundColor(.gray)
-                        }
                     }
                     .padding()
-
+                    
                     ScrollViewReader {proxy in
                         ScrollView {
                             ForEach(appState.allMessages.filter({$0.role != .system}), id: \.self.id) { message in
@@ -56,7 +46,7 @@ struct CoachChatView: View {
                         .onAppear {
                             proxy.scrollTo(bottomPaddingID)
                         }
-                        .onChange(of: allMessages()) { _ in
+                        .onChange(of: appState.allMessages) { _ in
                             DispatchQueue.main.async {
                                 withAnimation {
                                     if !isScrolling {
@@ -70,7 +60,14 @@ struct CoachChatView: View {
                     .padding()
                     
                     HStack {
-                        TextField("Enter a message...", text: $appState.currentInput)
+                        TextField("Enter a message...", text: $appState.currentInput, onCommit:  {
+                            appState.sendMessage()
+                            appState.currentInput = ""
+                            self.endEditing()
+                        })
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .padding(.horizontal)
+                        
                         Button(action: {
                             appState.sendMessage()
                             appState.currentInput = ""
@@ -78,51 +75,27 @@ struct CoachChatView: View {
                         }) {
                             Image(systemName: "paperplane")
                                 .resizable()
-                                .frame(width: 25, height: 25)
+                                .frame(width: 25, height: 20)
                                 .foregroundColor(.gray)
                         }
+                        .padding(.trailing)
                     }
-                    .padding()
                 }
             }
         }
     }
-
+    
     func messageView(message: Message) -> some View {
-        VStack {
-            HStack {
-                if message.role == .user { Spacer() }
-                Text(message.content)
-                    .padding()
-                    .background(message.role == .user ? Color.blue : Color.gray.opacity(0.2))
-                    .cornerRadius(20)
-                    .contextMenu {
-                        Button(action: {
-                            message.copyTextToClipboard()
-                            print("Text copied to clipboard")
-                        }) {
-                            Text("Copy")
-                            Image(systemName: "doc.on.doc")
-                        }
-                    }
-                if message.role == .assistant { Spacer() }
-            }
-            if message.content == "Sure thing, but you have to fill this form first." {
-                NavigationLink(destination: WorkoutPlanForm()) {
-                    Image(systemName: "doc")
-                        .resizable()
-                        .frame(width: 45, height: 60)
-                        .foregroundColor(.gray)
-                }
-            }
+        HStack {
+            if message.role == .assistant { Spacer() }
+            Text(message.content)
+                .padding(10)
+                .background(message.role == .user ? Color.blue : Color.gray.opacity(0.2))
+                .cornerRadius(15)
+                .foregroundColor(message.role == .user ? .white : .black)
+            if message.role == .user { Spacer() }
         }
-    }
-
-
-
-    func allMessages() -> [Message] {
-        return (appState.workoutMessages + appState.conversationMessages + appState.dietMessages)
-            .sorted(by: {$0.createAt < $1.createAt})
+        .padding(.horizontal)
     }
     
     func scrollToBottom(_ proxy: ScrollViewProxy) {
@@ -130,11 +103,6 @@ struct CoachChatView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             self.isScrolling = false
         }
-    }
-    
-    func resetAppState() {
-        openAIService.cancelCurrentStream()
-        self.appState.reset()
     }
 }
 

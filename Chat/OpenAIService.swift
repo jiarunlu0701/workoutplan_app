@@ -1,61 +1,78 @@
 import Foundation
-import Alamofire
+import OpenAI
+import Combine
+import SwiftUI
+
+struct Message: Identifiable, Equatable {
+    let id: String
+    let role: Role
+    let content: String
+    let createAt: Date
+    
+    enum Role: Equatable {
+        case user
+        case assistant
+        case system
+    }
+}
+
 
 class OpenAIService {
-    private let endpointUrl = "https://api.openai.com/v1/chat/completions"
-    private var currentRequest: DataStreamRequest?
+    @Published var currentInput: String = ""
+    @Published var assistantMessages: [Message] = []
     
-    func sendMessage(messages: [Message]) async -> OpenAIChatResponse? {
-        let openAIMessages = messages.map({OpenAIChatMessage(role: $0.role, content: $0.content)})
-        
-        let body = OpenAIChatBody(model: "gpt-4-0613", messages: openAIMessages, max_tokens: 2300, stream: false)
-        let headers: HTTPHeaders = [
-            "Authorization": "Bearer \(Constants.openAIApiKey)"
-        ]
-        
-        return try? await AF.request(endpointUrl, method: .post, parameters: body, encoder: .json, headers: headers).serializingDecodable(OpenAIChatResponse.self).value
-    }
-
-    func sendStreamMessage(messages: [Message]) -> DataStreamRequest{
-        let openAIMessages = messages.map({OpenAIChatMessage(role: $0.role, content: $0.content)})
-        let body = OpenAIChatBody(model: "gpt-4-0613", messages: openAIMessages, max_tokens: 5892, stream: true)
-        let headers: HTTPHeaders = [
-            "Authorization": "Bearer \(Constants.openAIApiKey)"
-        ]
-        let request = AF.streamRequest(endpointUrl, method: .post, parameters: body, encoder: .json, headers: headers)
-        self.currentRequest = request
-        return request
+    private let openAI: OpenAI
+    private var cancellables = Set<AnyCancellable>()
+    
+    init(apiToken: String) {
+        self.openAI = OpenAI(apiToken: "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")
     }
     
-    func cancelCurrentStream() {
-        currentRequest?.cancel()
-        currentRequest = nil
+    func sendMessage(content: String, completion: @escaping (Result<Message, Error>) -> Void) {
+        let userMessage = Message(id: UUID().uuidString, role: .user, content: content, createAt: Date())
+        assistantMessages.append(userMessage)
+        
+        var messages: [Chat] = [.init(role: .system, content: "You are a helpful assistant.")]
+        messages.append(Chat(role: .user, content: content))
+        
+        let functions = [
+            ChatFunctionDeclaration(
+                name: "get_current_weather",
+                description: "Get the current weather in a given location",
+                parameters: JSONSchema(
+                    type: .object,
+                    properties: [
+                        "location": .init(type: .string, description: "The city and state, e.g. San Francisco, CA"),
+                        "unit": .init(type: .string, enumValues: ["celsius", "fahrenheit"])
+                    ],
+                    required: ["location"]
+                )
+            )
+        ]
+        
+        let query = ChatQuery(model: .gpt3_5Turbo, messages: messages, functions: functions)
+        
+        openAI
+            .chatsStream(query: query)
+            .sink { completion in
+                switch completion {
+                case .failure(let error):
+                    print("Error: \(error)")
+                case .finished:
+                    print("Chat stream completed successfully")
+                }
+            } receiveValue: { result in
+                switch result {
+                case .success(let chatResult):
+                    if let choice = chatResult.choices.first, let assistantResponse = choice.delta.content {
+                        let responseMessage = Message(id: UUID().uuidString, role: .assistant, content: assistantResponse, createAt: Date())
+                        self.assistantMessages.append(responseMessage)
+                        completion(.success(responseMessage))
+                    }
+                case .failure(let error):
+                    completion(.failure(error))
+                }
+            }
+            .store(in: &cancellables)
     }
-
-}
-
-struct OpenAIChatBody: Encodable {
-    let model: String
-    let messages: [OpenAIChatMessage]
-    let max_tokens: Int? // Add this line
-    let stream: Bool
-}
-
-struct OpenAIChatMessage: Codable {
-    let role: SenderRole
-    let content: String
-}
-
-enum SenderRole: String, Codable {
-    case system
-    case user
-    case assistant
-}
-
-struct OpenAIChatResponse: Decodable {
-    let choices: [OpenAIChatChoice]
-}
-
-struct OpenAIChatChoice: Decodable {
-    let message: OpenAIChatMessage
 }
