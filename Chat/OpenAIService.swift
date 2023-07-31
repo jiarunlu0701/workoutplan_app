@@ -6,7 +6,7 @@ import SwiftUI
 struct Message: Identifiable, Equatable {
     let id: String
     let role: Role
-    let content: String
+    var content: String // Change this line
     let createAt: Date
     
     enum Role: Equatable {
@@ -16,19 +16,19 @@ struct Message: Identifiable, Equatable {
     }
 }
 
-
 class OpenAIService {
     @Published var currentInput: String = ""
-    @Published var assistantMessages: [Message] = []
-    
+    @Published var assistantMessages: [Message] = [] // Publish the assistantMessages array
+    var currentAssistantMessageId: String? // Add this line
     private let openAI: OpenAI
     private var cancellables = Set<AnyCancellable>()
+    private var currentAssistantContent: String = ""
     
     init(apiToken: String) {
         self.openAI = OpenAI(apiToken: "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")
     }
     
-    func sendMessage(content: String, completion: @escaping (Result<Message, Error>) -> Void) {
+    func sendMessage(content: String, completion: @escaping (Result<String, Error>) -> Void) {
         let userMessage = Message(id: UUID().uuidString, role: .user, content: content, createAt: Date())
         assistantMessages.append(userMessage)
         
@@ -51,23 +51,22 @@ class OpenAIService {
         ]
         
         let query = ChatQuery(model: .gpt3_5Turbo, messages: messages, functions: functions)
-        
         openAI
             .chatsStream(query: query)
-            .sink { completion in
-                switch completion {
+            .sink { [weak self] completionEvent in
+                switch completionEvent {
                 case .failure(let error):
                     print("Error: \(error)")
+                    completion(.failure(error))
                 case .finished:
                     print("Chat stream completed successfully")
                 }
-            } receiveValue: { result in
+            } receiveValue: { [weak self] result in
                 switch result {
                 case .success(let chatResult):
                     if let choice = chatResult.choices.first, let assistantResponse = choice.delta.content {
-                        let responseMessage = Message(id: UUID().uuidString, role: .assistant, content: assistantResponse, createAt: Date())
-                        self.assistantMessages.append(responseMessage)
-                        completion(.success(responseMessage))
+                        self?.currentAssistantContent.append(assistantResponse)
+                        completion(.success(assistantResponse))
                     }
                 case .failure(let error):
                     completion(.failure(error))
