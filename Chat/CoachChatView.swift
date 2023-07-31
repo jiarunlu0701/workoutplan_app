@@ -86,40 +86,39 @@ struct CoachChatView: View {
     }
     
     func messageView(message: Message) -> some View {
-        Group {
-            if message.role == .user {
-                HStack {
-                    Spacer()
-                    Text(message.content)
-                        .padding(10)
-                        .background(Color.blue)
-                        .cornerRadius(15)
-                        .foregroundColor(.white)
-                }
-                .padding(.horizontal)
-            } else if message.role == .assistant {
-                HStack {
-                    Text(message.content)
-                        .padding(10)
-                        .background(Color.green)
-                        .cornerRadius(15)
-                        .foregroundColor(.white)
-                    Spacer()
-                }
-                .padding(.horizontal)
-            } else if message.role == .system {
-                Text(message.content)
-                    .padding(10)
-                    .background(Color.gray)
-                    .cornerRadius(15)
-                    .foregroundColor(.black)
+            Group {
+                if message.role == .user {
+                    HStack {
+                        Spacer()
+                        Text(message.content)
+                            .padding(10)
+                            .background(Color.blue)
+                            .cornerRadius(15)
+                            .foregroundColor(.white)
+                    }
                     .padding(.horizontal)
-            } else {
-                EmptyView()
+                } else if message.role == .assistant {
+                    HStack {
+                        Text(message.content)
+                            .padding(10)
+                            .background(Color.green)
+                            .cornerRadius(15)
+                            .foregroundColor(.white)
+                        Spacer()
+                    }
+                    .padding(.horizontal)
+                } else if message.role == .system {
+                    Text(message.content)
+                        .padding(10)
+                        .background(Color.gray)
+                        .cornerRadius(15)
+                        .foregroundColor(.black)
+                        .padding(.horizontal)
+                } else {
+                    EmptyView()
+                }
             }
         }
-    }
-
     
     func scrollToBottom(_ proxy: ScrollViewProxy) {
         proxy.scrollTo(bottomPaddingID, anchor: .bottom)

@@ -3,6 +3,11 @@ import OpenAI
 import Combine
 import SwiftUI
 
+struct FunctionCall: Codable {
+    let name: String
+    let arguments: String
+}
+
 struct Message: Identifiable, Equatable {
     let id: String
     let role: Role
