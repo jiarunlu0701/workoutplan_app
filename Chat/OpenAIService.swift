@@ -1,4 +1,3 @@
-import Foundation
 import OpenAI
 import Combine
 import SwiftUI
@@ -10,15 +9,10 @@ struct FunctionCall: Codable {
 
 struct Message: Identifiable, Equatable {
     let id: String
-    let role: Role
-    var content: String // Change this line
-    let createAt: Date
+    let role: Chat.Role
+    var content: String
     
-    enum Role: Equatable {
-        case user
-        case assistant
-        case system
-    }
+    let createAt: Date
 }
 
 class OpenAIService {
@@ -69,9 +63,16 @@ class OpenAIService {
             } receiveValue: { [weak self] result in
                 switch result {
                 case .success(let chatResult):
-                    if let choice = chatResult.choices.first, let assistantResponse = choice.delta.content {
-                        self?.currentAssistantContent.append(assistantResponse)
-                        completion(.success(assistantResponse))
+                    if let choice = chatResult.choices.first {
+                        if let assistantResponse = choice.delta.content {
+                            self?.currentAssistantContent.append(assistantResponse)
+                            completion(.success(assistantResponse))
+                        }
+                        if let functionCall = choice.delta.functionCall {
+                            let functionCallMessage = Message(id: UUID().uuidString, role: .assistant, content: "Function: \(functionCall.name ?? "") called with arguments: \(functionCall.arguments ?? "")", createAt: Date())
+                            print(functionCallMessage)
+                            self?.assistantMessages.append(functionCallMessage)
+                        }
                     }
                 case .failure(let error):
                     completion(.failure(error))
