@@ -17,20 +17,21 @@ struct Message: Identifiable, Equatable {
 
 class OpenAIService {
     @Published var currentInput: String = ""
-    @Published var assistantMessages: [Message] = [] // Publish the assistantMessages array
-    var currentAssistantMessageId: String? // Add this line
+    @Published var assistantMessages: [Message] = []
+    var currentAssistantMessageId: String?
     private let openAI: OpenAI
     private var cancellables = Set<AnyCancellable>()
     private var currentAssistantContent: String = ""
-    
+    private var currentFunctionName: String = ""
+    private var currentFunctionArguments: String = ""
+    private var currentFunctionDetails: String = ""
+
     init(apiToken: String) {
         self.openAI = OpenAI(apiToken: "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")
     }
     
     func sendMessage(content: String, completion: @escaping (Result<String, Error>) -> Void) {
         let userMessage = Message(id: UUID().uuidString, role: .user, content: content, createAt: Date())
-        assistantMessages.append(userMessage)
-        
         var messages: [Chat] = [.init(role: .system, content: "You are a helpful assistant.")]
         messages.append(Chat(role: .user, content: content))
         
@@ -69,11 +70,27 @@ class OpenAIService {
                             completion(.success(assistantResponse))
                         }
                         if let functionCall = choice.delta.functionCall {
-                            let functionCallMessage = Message(id: UUID().uuidString, role: .assistant, content: "Function: \(functionCall.name ?? "") called with arguments: \(functionCall.arguments ?? "")", createAt: Date())
-                            print(functionCallMessage)
-                            self?.assistantMessages.append(functionCallMessage)
-                        }
-                    }
+                                                    // Store function name if it's not stored yet
+                                                    if self?.currentFunctionName.isEmpty ?? true {
+                                                        self?.currentFunctionName = functionCall.name ?? ""
+                                                    }
+                                                    
+                                                    self?.currentFunctionDetails.append(functionCall.arguments ?? "")
+                                                    
+                                                    if self?.currentFunctionDetails.last == "}" {
+                                                        // Assuming you have the full JSON string here
+                                                        let functionCallMessage = Message(id: UUID().uuidString, role: .assistant,
+                                                                                          content: "Function: \(self?.currentFunctionName ?? "")\nParameter: \(self?.currentFunctionDetails ?? "")",
+                                                                                          createAt: Date())
+
+                                                        print(functionCallMessage)
+                                                        self?.assistantMessages.append(functionCallMessage)
+                                                        // Reset for the next function call
+                                                        self?.currentFunctionDetails = ""
+                                                        self?.currentFunctionName = ""
+                                                    }
+                                                }
+                                            }
                 case .failure(let error):
                     completion(.failure(error))
                 }
